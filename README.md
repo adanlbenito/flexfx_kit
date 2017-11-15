@@ -385,7 +385,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 // NOTE: IIR, FIR, and BiQuad coefficients and state data *must* be declared non-static global!
 
 // Single-pole low pass filter implemented with a biquad IIR (only uses B0,B1,A1 coeffs).
-int lopass_coeffs[5] = {FQ(0.999),0,0,0,0};
+int lopass_coeffs[5] = {FQ(1.0),0,0,0,0};
 int lopass_stateL[4] = {0,0,0,0}, lopass_stateR[4] = {0,0,0,0}; // Initial filter state/history.
 
 void mixer( const int* usb_output, int* usb_input,
@@ -409,8 +409,8 @@ void mixer( const int* usb_output, int* usb_input,
     i2s_input[7] = dsp_iir_filt( dsp_output[1], lopass_coeffs, lopass_stateR, 1 );
 
     // Blend/mix USB output audio with the processed guitar audio from the DSP output.
-    i2s_input[6] = dsp_multiply(blend,i2s_input[6])/2+dsp_multiply(FQ(1)-blend,usb_output[0])/2;
-    i2s_input[7] = dsp_multiply(blend,i2s_input[7])/2+dsp_multiply(FQ(1)-blend,usb_output[1])/2;
+    i2s_input[6] = dsp_multiply(blend,i2s_input[6])/2 + dsp_multiply(FQ(1)-blend,usb_output[0])/2;
+    i2s_input[7] = dsp_multiply(blend,i2s_input[7])/2 + dsp_multiply(FQ(1)-blend,usb_output[1])/2;
 
     // Apply master volume to the I2S driver inputs (i.e. to the data going to the audio DACs).
     i2s_input[6] = dsp_multiply( i2s_input[6], volume );
