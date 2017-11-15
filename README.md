@@ -148,7 +148,7 @@ extern void i2c_stop ( void );         // Assert an I2C stop condition.
 //
 // AH (high) and AL (low) form the 64-bit signed accumulator
 // XX, YY, and AA are 32-bit Q28 fixed point values
-// PP is a 64-bit aligned pointer to two 32-bit Q31 values
+// PP is a 64-bit aligned pointer to two 32-bit Q28 values
 
 #define DSP_MAC( ah, al, xx, yy ) asm("maccs %0,%1,%2,%3":"=r"(ah),"=r"(al):"r"(xx),"r"(yy),"0"(ah),"1"(al) );
 #define DSP_SAT( ah, al )         asm("lsats %0,%1,%2":"=r"(ah),"=r"(al):"r"(28),"0"(ah),"1"(al));
@@ -188,7 +188,6 @@ int dsp_fir_filt ( int xx, const int* cc, int* ss, int nn ); // FIR filter of nn
 int dsp_iir_filt ( int xx, const int* cc, int* ss, int nn ); // nn Cascaded bi-quad IIR filters
 int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
 int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
-int dsp_volume   ( int xx, int volume );                     // Noise-shaped volume control
 
 // Biquad filter coefficient calculation functions (do not use these in real-time DSP threads).
 //
@@ -200,7 +199,7 @@ void make_notch    ( int cc[5], double ff, double qq );
 void make_lowpass  ( int cc[5], double ff, double qq );
 void make_highpass ( int cc[5], double ff, double qq );
 void make_allpass  ( int cc[5], double ff, double qq );
-void make_bandpass ( int cc[5], double ff1, double ff2 );
+void make_bandpass ( int cc[5], double ff, double ff2 );
 void make_peaking  ( int cc[5], double ff, double qq, double gg );
 void make_lowshelf ( int cc[5], double ff, double qq, double gg );
 void make_highshelf( int cc[5], double ff, double qq, double gg );
@@ -228,23 +227,19 @@ Development Steps
 1) Download and install the free XMOS development tools from www.xmos.com
 2) Obtain the FlexFX&trade; dev-kit for building your own apps from https://github.com/markseel/flexfx_kit
 3) Set an environment path to point to XMOS command-line build tools.
-4) Add your own source code to a new 'C' file (e.g. ('myapp.c')
-5) Build the application (the build script uses the XMOS command line compiler/linker).
-6) Load the application into RAM and run it using the XMOS JTAG board.
-7) Burn firmware application to FLASH using the XMOS JTAG board.
-8) Convert the firmware application to a binary image for burning FLASH via USB.
-9) Burn the firmware binary via USB using the 'flexfx.py' Python script.
+4) Add your own source code to a new 'C' file (e.g. ('your_application.c')
+5) Build the application using the build script / batch file (uses the XMOS command line compiler/linker).
+6) Burn the firmware binary via USB using the 'flexfx.py' Python script.
 
 ```
-Get the kit ............ git clone https://github.com/markseel/flexfx_kit.git
-Set environment vars
-  on Windows ........... c:\Program Files (x86)\XMOS\xTIMEcomposer\Community_14.2.0\SetEnv.bat
-  on OS X / Linux ...... /Applications/XMOS_xTIMEcomposer_Community_14.1.1/SetEnv.command
-Build your app ......... build.bat myapp
-Run the application .... xrun --xscope example.xe
-Burn to FLASH (XTAG) ... xflash example.xe
-Convert to binary ...... xflash --noinq --boot-partition-size 524288 example.xe -o example.bin
-Burn to FLASH (USB) .... flexfx.py 0 example.bin
+Get the kit ............... git clone https://github.com/markseel/flexfx_kit.git
+Set XMOS build tools environment variables
+  on Windows .............. c:\Program Files (x86)\XMOS\xTIMEcomposer\Community_14.2.0\SetEnv.bat
+  on OS X / Linux ......... /Applications/XMOS_xTIMEcomposer_Community_14.1.1/SetEnv.command
+Build your custom application (be sure to exclude the .c file extension)
+  on Windows .............. build.bat your_application
+  on OS X / Linux ......... ./build.sh your_application
+Burn to FLASH via USB ..... flexfx.py 0 your_application.bin
 ```
 
 Run-time Control
@@ -252,14 +247,15 @@ Run-time Control
 
 Audio processing code is controlled by properties.
 A property is composed of six 32-bit words where the first word is the property ID and the remaining five 32-bit words are property data.
+The most significant 16 bits of the property ID must be non-zero since zero values are used for burning FLASH memory with firmware image data.  The lower 16 bits can be of any value.
 Properties can be sent to and received from audio processing code by being encapsulated in MIDI SYSEX messages.
-The FlexFX SDK handles USB MIDI and MIDI sysex rendering/parsing -
+The FlexFX SDK handles the USB MIDI and MIDI sysex rendering/parsing -
 the audio firmware only sees six 32-word properties and is not aware of USB MIDI and sysex rendering/parsing as this is handled by the FlexFX SDK.
 
 An example property is shown below:
 
 ```
-Property ID = 0x00001301
+Property ID = 0x01011301     The ID must have a non-zero 16-bit upper word (0x0101 in this example)
 Param 1     = 0x11223344
 Param 2     = 0x55667788
 Param 3     = 0x99aabbcc
@@ -386,7 +382,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 // substantial sample processing since this may starve the I2S audio driver. Do not use floating
 // point operations since this is a real-time audio thread - all DSP operations and calculations
 // should be performed using fixed-point math.
-// NOTE: IIR, FIR, and BiQuad coeff and state data *must* be declared non-static global!
+// NOTE: IIR, FIR, and BiQuad coefficients and state data *must* be declared non-static global!
 
 // Single-pole low pass filter implemented with a biquad IIR (only uses B0,B1,A1 coeffs).
 int lopass_coeffs[5] = {FQ(0.999),0,0,0,0};
@@ -396,7 +392,7 @@ void mixer( const int* usb_output, int* usb_input,
             const int* i2s_output, int* i2s_input,
             const int* dsp_output, int* dsp_input, const int* property )
 {
-    static int volume = FQ(0.0), blend = FQ(0.49999); // Initial volume and blend/mix levels.
+    static int volume = FQ(0.0), blend = FQ(0.5); // Initial volume and blend/mix levels.
 
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     // Route the guitar signal to the USB input and to the DSP input.
@@ -413,10 +409,8 @@ void mixer( const int* usb_output, int* usb_input,
     i2s_input[7] = dsp_iir_filt( dsp_output[1], lopass_coeffs, lopass_stateR, 1 );
 
     // Blend/mix USB output audio with the processed guitar audio from the DSP output.
-    i2s_input[6] = dsp_multiply( blend, i2s_input[6] ) / 2
-                 + dsp_multiply( FQ(0.99999)-blend, usb_output[0] ) / 2;
-    i2s_input[7] = dsp_multiply( blend, i2s_input[7] ) / 2
-                 + dsp_multiply( FQ(0.99999)-blend, usb_output[1] ) / 2;
+    i2s_input[6] = dsp_multiply(blend,i2s_input[6])/2+dsp_multiply(FQ(1)-blend,usb_output[0])/2;
+    i2s_input[7] = dsp_multiply(blend,i2s_input[7])/2+dsp_multiply(FQ(1)-blend,usb_output[1])/2;
 
     // Apply master volume to the I2S driver inputs (i.e. to the data going to the audio DACs).
     i2s_input[6] = dsp_multiply( i2s_input[6], volume );
@@ -433,7 +427,7 @@ void mixer( const int* usb_output, int* usb_input,
 // tile 0. The number of incoming and outgoing samples in the 'samples' array is set by the constant
 // 'dsp_chan_count' defined above. Do not use floating point operations since these are real-time
 // audio threads - all DSP operations and calculations should be performed using fixed-point math.
-// NOTE: IIR, FIR, and BiQuad coeff and state data *must* be declared non-static global!
+// NOTE: IIR, FIR, and BiQuad coefficients and state data *must* be declared non-static global!
 
 #define _CONVOLVE_2a(nn) \
     asm("ldd   %0,%1,%2[%3]":"=r"(b1),"=r"(b0):"r"(cc),"r"(nn)); \
@@ -458,16 +452,16 @@ void mixer( const int* usb_output, int* usb_input,
 }
 
 // 288 sample convolution using xCORE-200 assembly ("flexfx.h" doesn't support convolution).
-void _CONVOLVE_288( int* xx, int* cc, int* ss, int* ah_, int* al_ ) \
+void _CONVOLVE_288( int* xx, int* cc, int* ss, int* ah_, int* al_ )
 {
-    int ah = *ah_, b0, b1, s0 = *xx, s1, s2, s3; unsigned al = *al_; \
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24; \
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24; \
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24; \
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24; \
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24; \
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24; \
-    *xx = s0; *ah_ = ah; *al_ = al; \
+    int ah = *ah_, b0, b1, s0 = *xx, s1, s2, s3; unsigned al = *al_;
+    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
+    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
+    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
+    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
+    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
+    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
+    *xx = s0; *ah_ = ah; *al_ = al;
 }
 
 int cabsim_coeff[2880], cabsim_state[2880]; // DSP data *must* be non-static global!
@@ -477,7 +471,7 @@ void dsp_initialize( void ) // Called once upon boot-up.
 {
     memset( &cabsim_coeff, 0, sizeof(cabsim_coeff) );
     memset( &cabsim_state, 0, sizeof(cabsim_state) );
-    cabsim_coeff[0] = cabsim_coeff[1440] = FQ(+0.9999999);
+    cabsim_coeff[0] = cabsim_coeff[1440] = FQ(+1.0);
 }
 
 // Process samples (from the mixer function) and properties. Send results to stage 2.
