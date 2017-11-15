@@ -1,27 +1,29 @@
 import sys, struct, random
 
-print ""
-print "Usage: python plot.py <datafile> time"
-print "       python plot.py <datafile> time [beg end]"
-print "       python plot.py <datafile> freq lin"
-print "       python plot.py <datafile> freq log"
-print ""
-print "Where: <datafile> Contains one sample value per line.  Each sample is an"
-print "                  ASCII/HEX value (e.g. FFFF0001) representing a fixed-"
-print "                  point sample value."
-print "       time       Indicates that a time-domain plot should be shown"
-print "       freq       Indicates that a frequency-domain plot should be shown"
-print "       [beg end]  Optional; specifies the first and last sample in order to"
-print "                  create a sub-set of data to be plotted"
-print ""
-print "Examle: Create time-domain plot data in \'out.txt\' showing samples 100"
-print "        through 300 ... bash$ python plot.py out.txt 100 300"
-print ""
-print "Examle: Create frequency-domain plot data in \'out.txt\' showing the Y-axis"
-print "        with a logarithmic scale ... bash$ python plot.py out.txt freq log"
-print ""
+if len(sys.argv) < 3:
 
-if len(sys.argv) < 3: exit(0)
+    print ""
+    print "Usage: python plot.py <datafile> time"
+    print "       python plot.py <datafile> time [beg end]"
+    print "       python plot.py <datafile> freq lin"
+    print "       python plot.py <datafile> freq log"
+    print ""
+    print "Where: <datafile> Contains one sample value per line.  Each sample is an"
+    print "                  ASCII/HEX value (e.g. FFFF0001) representing a fixed-"
+    print "                  point sample value."
+    print "       time       Indicates that a time-domain plot should be shown"
+    print "       freq       Indicates that a frequency-domain plot should be shown"
+    print "       [beg end]  Optional; specifies the first and last sample in order to"
+    print "                  create a sub-set of data to be plotted"
+    print ""
+    print "Examle: Create time-domain plot data in \'out.txt\' showing samples 100"
+    print "        through 300 ... bash$ python plot.py out.txt 100 300"
+    print ""
+    print "Examle: Create frequency-domain plot data in \'out.txt\' showing the Y-axis"
+    print "        with a logarithmic scale ... bash$ python plot.py out.txt freq log"
+    print ""
+
+    exit(0)
 
 import numpy
 import matplotlib.pyplot

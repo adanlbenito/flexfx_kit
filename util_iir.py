@@ -4,14 +4,19 @@ import numpy as np
 import scipy.signal as dsp
 import matplotlib.pyplot as plot
 
-print "Usage 1: python design.py <type> <freq> <Q> <gain>"
-print "         <type> filter type (notch, lowpass, highpass, allpass, bandpass,"
-print "                             peaking, highshelf, or lowshelf"
-print "         <freq> is cutoff frequency relative to Fs (0 <= freq < 0.5)"
-print "         <Q> is the filter Q-factor"
-print "         <gain> is the filter positive or negative gain in dB"
+if len(sys.argv) < 4:
 
-if len(sys.argv) < 4: exit(0)
+    print ""
+    print "Usage 1: python design.py <type> <freq> <Q> <gain>"
+    print ""
+    print "         <type> filter type (notch, lowpass, highpass, allpass, bandpass,"
+    print "                             peaking, highshelf, or lowshelf"
+    print "         <freq> is cutoff frequency relative to Fs (0 <= freq < 0.5)"
+    print "         <Q> is the filter Q-factor"
+    print "         <gain> is the filter positive or negative gain in dB"
+    print ""
+
+    exit(0)
 
 np.seterr( all='ignore' )
 
@@ -199,9 +204,5 @@ if type == "peaking" or type == "highshelf" or type == "lowshelf":
 else:
     plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-60, ymax=6 )
 
-sys.stdout.write( "FQ(%+1.9f),"  % (b0/a0) );
-sys.stdout.write( "FQ(%+1.9f),"  % (b1/a0) );
-sys.stdout.write( "FQ(%+1.9f),"  % (b2/a0) );
-sys.stdout.write( "FQ(%+1.9f),"  % (a1/a0) );
-sys.stdout.write( "FQ(%+1.9f)\n" % (a2/a0) );
+print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,a1/a0,a2/a0)
 

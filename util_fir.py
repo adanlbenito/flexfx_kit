@@ -2,13 +2,18 @@ from numpy import log10, cos, sin, pi, absolute, arange
 from scipy.signal import kaiserord, firwin, freqz
 from matplotlib.pyplot import *
 
-print "Usage: python util_fir <pass_freq> <stop_freq> <ripple> <attenuation>"
-print "       <pass_freq> is the passband frequency relative to Fs (0 <= freq < 0.5)"
-print "       <stop_freq> is the stopband frequency relative to Fs (0 <= freq < 0.5)"
-print "       <ripple> is the maximum passband ripple"
-print "       <attenuation> is the stopband attenuation"
+if len(sys.argv) < 4:
 
-if len(sys.argv) < 4: exit(0)
+    print ""
+    print "Usage: python util_fir <pass_freq> <stop_freq> <ripple> <attenuation>"
+    print ""
+    print "       <pass_freq> is the passband frequency relative to Fs (0 <= freq < 0.5)"
+    print "       <stop_freq> is the stopband frequency relative to Fs (0 <= freq < 0.5)"
+    print "       <ripple> is the maximum passband ripple"
+    print "       <attenuation> is the stopband attenuation"
+    print ""
+
+    exit(0)
 
 passband_freq   = float( sys.argv[1] )
 stopband_freq   = float( sys.argv[2] )
@@ -42,5 +47,13 @@ grid(True)
 
 show()
 
-for cc in taps[0:len(taps)-1]: sys.stdout.write( "FQ(%+1.9f)," % cc )
+ii = 0
+print "int coeffs[%u] = " % len(taps)
+print "{\t"
+for cc in taps[0:len(taps)-1]:
+    if (ii % 5) == 0: sys.stdout.write('    ')
+    sys.stdout.write( "FQ(%+1.9f)," % cc )
+    ii += 1
+    if (ii % 5) == 0: sys.stdout.write('\n')
 sys.stdout.write( "FQ(%+1.9f)\n" % taps[len(taps)-1] )
+print "};"
