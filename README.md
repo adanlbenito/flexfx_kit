@@ -558,6 +558,7 @@ bash$ python flexfx.py 0
 ...
 ```
 This video shows properties from the DSP board. For this example FlexFX firmware is capturing four potentiometer values, packaging them up into a property, and sending the property to the USB host (see code below).
+https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.py.usage2.mp4
 ```
 static void adc_read( double values[4] )
 {
@@ -583,8 +584,6 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     usb_prop[1] = FQ(values[0]); usb_prop[2] = FQ(values[1]); usb_prop[3] = FQ(values[2]);
 }
 ```
-https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.py.usage2.mp4
-
 
 #### Usage #3
 Burn a custom firmware application to the DSP board's FLASH memory (board is enumerated as MIDI device #0).  This takes about 10 seconds.
