@@ -583,7 +583,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     usb_prop[1] = FQ(values[0]); usb_prop[2] = FQ(values[1]); usb_prop[3] = FQ(values[2]);
 }
 ```
-https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.py.usage2.mp4)
+https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.py.usage2.mp4
 
 
 #### Usage #3
