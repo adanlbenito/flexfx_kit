@@ -27,7 +27,8 @@ Framework Features
 
 Compatible Hardware
 ----------------------------------
-![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware_216.png)
+![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware_mpdule.png)
+![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware_demo.jpg)
 
 Functional Organization
 ----------------------------------
