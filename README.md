@@ -25,6 +25,10 @@ Framework Features
 * Functions for I2C bus (for peripheral control) and port input/output
 * I2S supports up to 8-slot TDM and up to four separate ADCs and four separate DACs
 
+Compatible Hardware
+----------------------------------
+![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware_216.png)
+
 Functional Organization
 ----------------------------------
 
