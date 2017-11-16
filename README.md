@@ -548,7 +548,7 @@ MIDI Input Devices:  0='FlexFX'
 ```
 
 #### Usage #2
-Indefinately display properties being sent from the DSP board, enumerated as USB MIDI device #0, to the USB host (CRTL-C to terminate).  The first six columns are the 32-bit property ID and five property values printed in hex/ASCII.  The last five columns are thge five property values converted from Q28 fixed-point to floating point).  These rows are printed at a very high rate - as fast as Python can obtain the USB data over MIDI and print to the console. 
+Indefinitely display properties being sent from the DSP board, enumerated as USB MIDI device #0, to the USB host (CRTL-C to terminate).  The first six columns are the 32-bit property ID and five property values printed in hex/ASCII.  The last five columns are the same five property values converted from Q28 fixed-point to floating point.  These rows are printed at a very high rate - as fast as Python can obtain the USB data over MIDI and print to the console. 
 ```
 bash$ python flexfx.py 0
 11111111  0478ee7b 08f1dcf7 0478ee7b 00dcd765 fd3f6eac  +0.27952 +0.55905 +0.27952 +0.05392 -0.17201
@@ -557,7 +557,10 @@ bash$ python flexfx.py 0
 11111111  0478ee7b 08f1dcf7 0478ee7b 00dcd765 fd3f6eac  +0.27952 +0.55905 +0.27952 +0.05392 -0.17201
 ...
 ```
-This video shows properties from the DSP board. For this example FlexFX firmware is capturing four potentiometer values, packaging them up into a property, and sending the property to the USB host (see code below).
+This video shows the 'flexfx.py' script receiving properties from the DSP board and printing them to the console.
+For this example FlexFX firmware is capturing four potentiometer values, packaging them up into a property,
+and sending the property to the USB host (see code below).
+One of the pots is being turned back and fourth resulting in changes to the corresponding property value.
 https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.py.usage2.mp4
 ```
 static void adc_read( double values[4] )
