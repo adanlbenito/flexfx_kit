@@ -29,7 +29,7 @@ Compatible Hardware
 ----------------------------------
 ![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware.png)
 
-Functional Organization
+Firmware Architecture
 ----------------------------------
 
 ![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.png)
