@@ -584,7 +584,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     usb_prop[2] = FQ(pot_values[1]); // float to Q28.
     usb_prop[3] = FQ(pot_values[2]); // float to Q28.
     usb_prop[4] = FQ(pot_values[3]); // float to Q28.
-
+}
 ```
 https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx_usage2.mp4)
 
