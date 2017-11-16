@@ -576,14 +576,11 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
     // If outgoing USB or DSP properties are still use then come back later ...
     if( usb_prop[0] != 0 || usb_prop[0] != 0 ) return;
-    // Read the potentiometers -- Pot[2] is volume, Pot[1] is tone, Pot[0] is blend.
-    double pot_values[4]; adc_read( pot_values );
-    // Create property to send to USB host
-    usb_prop[0] = 0x01010000; dsp_prop[5] = 0;
-    usb_prop[1] = FQ(pot_values[0]); // float to Q28.
-    usb_prop[2] = FQ(pot_values[1]); // float to Q28.
-    usb_prop[3] = FQ(pot_values[2]); // float to Q28.
-    usb_prop[4] = FQ(pot_values[3]); // float to Q28.
+    // Read the potentiometers -- convert the values from float to Q28 using the FQ macro.
+    double values[4]; adc_read( values );
+    // Create property with three Q28 pot values to send to USB host
+    usb_prop[0] = 0x01010000; dsp_prop[4] = dsp_prop[5] = 0;
+    usb_prop[1] = FQ(values[0]); usb_prop[2] = FQ(values[1]); usb_prop[3] = FQ(values[2]);
 }
 ```
 https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx_usage2.mp4)
