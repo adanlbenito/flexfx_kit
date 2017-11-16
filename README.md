@@ -557,6 +557,37 @@ bash$ python flexfx.py 0
 11111111  0478ee7b 08f1dcf7 0478ee7b 00dcd765 fd3f6eac  +0.27952 +0.55905 +0.27952 +0.05392 -0.17201
 ...
 ```
+This video shows properties from the DSP board. For this example FlexFX firmware is capturing four potentiometer values, packaging them up into a property, and sending the property to the USB host (see code below).
+```
+static void adc_read( double values[4] )
+{
+    byte ii, hi, lo, value;
+    i2c_start( 100000 ); // Set bit clock to 400 kHz and assert start condition.
+    i2c_write( 0x52+1 ); // Select I2C peripheral for Read.
+    for( ii = 0; ii < 4; ++ii ) {
+        hi = i2c_read(); i2c_ack(0); // Read low byte, assert ACK.
+        lo = i2c_read(); i2c_ack(ii==3); // Read high byte, assert ACK (NACK on last read).
+        value = (hi<<4) + (lo>>4); // Select correct value and store ADC sample.
+        values[hi>>4] = ((double)value)/256.0; // Convert from byte to double (0<=val<1.0).
+    }
+    i2c_stop();
+}
+void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+{
+    // If outgoing USB or DSP properties are still use then come back later ...
+    if( usb_prop[0] != 0 || usb_prop[0] != 0 ) return;
+    // Read the potentiometers -- Pot[2] is volume, Pot[1] is tone, Pot[0] is blend.
+    double pot_values[4]; adc_read( pot_values );
+    // Create property to send to USB host
+    usb_prop[0] = 0x01010000; dsp_prop[5] = 0;
+    usb_prop[1] = FQ(pot_values[0]); // float to Q28.
+    usb_prop[2] = FQ(pot_values[1]); // float to Q28.
+    usb_prop[3] = FQ(pot_values[2]); // float to Q28.
+    usb_prop[4] = FQ(pot_values[3]); // float to Q28.
+
+```
+https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx_usage2.mp4)
+
 
 #### Usage #3
 Burn a custom firmware application to the DSP board's FLASH memory (board is enumerated as MIDI device #0).  This takes about 10 seconds.
@@ -683,5 +714,3 @@ bash$ python util_plot.py output.txt freq log
 bash$ python util_plot.py output.txt time 0 150
 ```
 ![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/util_plot.png)
-
-https://raw.githubusercontent.com/markseel/flexfx_kit/master/test.mp4)
