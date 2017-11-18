@@ -70,13 +70,15 @@ inline int dsp_mult_acc( int xx, int yy, int aa ) // RR = XX * YY + AA
 // CC is array of 32-bit filter coefficients - length is 'nn' for FIR, nn * 5 for IIR
 // SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 1 for LPF/HPF/INT
 // KK is time constant for LPF, HPF and INT where KK = exp(-2.0 * PI * Fc)
+// AH (high) and AL (low) form the 64-bit signed accumulator
 
 int dsp_random   ( int gg, int seed );                       // Random number, gg = previous value
+int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
+int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
 int dsp_integrate( int xx, int kk, int* ss );                // Leaky integrator
 int dsp_fir_filt ( int xx, const int* cc, int* ss, int nn ); // FIR filter of nn taps
 int dsp_iir_filt ( int xx, const int* cc, int* ss, int nn ); // nn Cascaded bi-quad IIR filters
-int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
-int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
+int dsp_convolve ( int xx, const int* cc, int* ss, int* ah, int* al ); // 240 tap FIR convolution
 
 // Biquad filter coefficient calculation functions (do not use these in real-time DSP threads).
 //

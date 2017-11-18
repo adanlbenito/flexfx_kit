@@ -255,8 +255,14 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
     file = open( sys.argv[2], "rb" )
     count = 0
     data = property_to_midi_sysex( [1,0,0,0,0,0] )
+    sys.stdout.write("Erasing")
+    sys.stdout.flush()
     midi_write( midi, data )
-    time.sleep( 5 )
+    for ii in range(0,5):
+        time.sleep( 1 )
+        sys.stdout.write(".")
+        sys.stdout.flush()
+    sys.stdout.write("Writing")
     while True:
         line = file.read( 16 )
         if len(line) == 0: break
@@ -269,8 +275,9 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
         midi_write( midi, property_to_midi_sysex( data ))
         #prop = midi_sysex_to_property( midi_wait( midi ));
         if count == 0 or (count % 16) == 0:
-            sys.stdout.write(".")
-            sys.stdout.flush()
+            if count == 0 or (count % 64) == 0:
+                sys.stdout.write(".")
+                sys.stdout.flush()
             time.sleep( 0.01 )
         time.sleep( 0.001 )
         count += 1
@@ -295,7 +302,7 @@ elif name[len(name)-4:] == ".wav": # Usage 5 - Load IR data (WAVE file) to DSP R
     samplesR = list(samplesL)
 
     offset = 0
-    while len(samplesL) > 0 and offset < 1440:
+    while len(samplesL) > 0 and offset < 1200:
 
         block = samplesL[0:5]
         if len(block) < 5: block.append(0)
@@ -303,7 +310,7 @@ elif name[len(name)-4:] == ".wav": # Usage 5 - Load IR data (WAVE file) to DSP R
         if len(block) < 5: block.append(0)
         if len(block) < 5: block.append(0)
         samplesL = samplesL[5:]
-        data = [ 0x01018000 + offset/5, block[0]/8,block[1]/8,block[2]/8,block[3]/8,block[4]/8 ]
+        data = [ 0x01018000 + offset/5, block[0],block[1],block[2],block[3],block[4] ]
         midi_write( midi, property_to_midi_sysex( data ))
         while True:
             prop = midi_sysex_to_property( midi_wait( midi ))
@@ -311,7 +318,7 @@ elif name[len(name)-4:] == ".wav": # Usage 5 - Load IR data (WAVE file) to DSP R
         sys.stdout.flush()
         offset += 5
 
-    while len(samplesR) > 0 and offset < 2880:
+    while len(samplesR) > 0 and offset < 2400:
 
         block = samplesR[0:5]
         if len(block) < 5: block.append(0)
@@ -319,7 +326,7 @@ elif name[len(name)-4:] == ".wav": # Usage 5 - Load IR data (WAVE file) to DSP R
         if len(block) < 5: block.append(0)
         if len(block) < 5: block.append(0)
         samplesR = samplesR[5:]
-        data = [ 0x01018000 + offset/5, block[0]/8,block[1]/8,block[2]/8,block[3]/8,block[4]/8 ]
+        data = [ 0x01018000 + offset/5, block[0],block[1],block[2],block[3],block[4] ]
         midi_write( midi, property_to_midi_sysex( data ))
         while True:
             prop = midi_sysex_to_property( midi_wait( midi ))
