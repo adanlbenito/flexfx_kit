@@ -276,7 +276,7 @@ Example Application
 ----------------------------------
 
 Stereo Cabinet Simulation with Tone/Volume and USB Audio Mixing.
-https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.py.usage2.mp4
+https://raw.githubusercontent.com/markseel/flexfx_kit/master/app_cabsim.mp4
 
 ```C
 #include "flexfx.h" // Defines config variables, I2C and GPIO functions, DSP functions, etc.
