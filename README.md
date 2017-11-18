@@ -275,7 +275,12 @@ that's used to send/receive properties to FlexFX applications via USB.
 Example Application
 ----------------------------------
 
-Stereo Cabinet Simulation with Tone/Volume and USB Audio Mixing.
+Stereo Cabinet Simulation with Tone/Volume and USB Audio Mixing. See this video for a demonstration. The firmware is first
+written to FLASH memory using the 'flexfx.py' script. After that the firmware reboots and enumerates as a USB audio device
+resulting in audio. The first few chords are sent from the guitar ADC to the line out DAC unprocessed. The 'flexfx.py' script
+is then used to load an IR file called 'ir1.wav'and then used to load another IR file called 'ir2.wav'.
+The firmware is performing 25 msec of IR convolution (at a 48 kHz audio sample rate) on both left and right audio channels
+using 32/64 bit fixed-point DSP.
 https://raw.githubusercontent.com/markseel/flexfx_kit/master/app_cabsim.mp4
 
 ```C
