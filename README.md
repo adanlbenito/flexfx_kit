@@ -27,9 +27,9 @@ Framework Features
 
 Compatible Hardware
 ----------------------------------
-![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware_module.png) | ![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware_demo.jpg)
+![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/hardware.png)
 
-Functional Organization
+Firmware Architecture
 ----------------------------------
 
 ![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/flexfx.png)
@@ -185,13 +185,15 @@ inline int dsp_mult_acc( int xx, int yy, int aa ) // RR = XX * YY + AA
 // CC is array of 32-bit filter coefficients - length is 'nn' for FIR, nn * 5 for IIR
 // SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 1 for LPF/HPF/INT
 // KK is time constant for LPF, HPF and INT where KK = exp(-2.0 * PI * Fc)
+// AH (high) and AL (low) form the 64-bit signed accumulator
 
 int dsp_random   ( int gg, int seed );                       // Random number, gg = previous value
+int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
+int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
 int dsp_integrate( int xx, int kk, int* ss );                // Leaky integrator
 int dsp_fir_filt ( int xx, const int* cc, int* ss, int nn ); // FIR filter of nn taps
 int dsp_iir_filt ( int xx, const int* cc, int* ss, int nn ); // nn Cascaded bi-quad IIR filters
-int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
-int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
+int dsp_convolve ( int xx, const int* cc, int* ss, int* ah, unsigned* al ); // 24 tap convolution
 
 // Biquad filter coefficient calculation functions (do not use these in real-time DSP threads).
 //
@@ -433,41 +435,25 @@ void mixer( const int* usb_output, int* usb_input,
 // audio threads - all DSP operations and calculations should be performed using fixed-point math.
 // NOTE: IIR, FIR, and BiQuad coefficients and state data *must* be declared non-static global!
 
-#define _CONVOLVE_2a(nn) \
-    asm("ldd   %0,%1,%2[%3]":"=r"(b1),"=r"(b0):"r"(cc),"r"(nn)); \
-    asm("ldd   %0,%1,%2[%3]":"=r"(s2),"=r"(s1):"r"(ss),"r"(nn)); \
-    asm("std   %0,%1,%2[%3]"::"r"(s1), "r"(s0),"r"(ss),"r"(nn)); \
-    asm("maccs %0,%1,%2,%3" :"=r"(ah),"=r"(al):"r"(b0),"r"(s0), "0"(ah),"1"(al)); \
-    asm("maccs %0,%1,%2,%3" :"=r"(ah),"=r"(al):"r"(b1),"r"(s1), "0"(ah),"1"(al));
-
-#define _CONVOLVE_2b(nn) \
-    asm("ldd   %0,%1,%2[%3]":"=r"(b1),"=r"(b0):"r"(cc),"r"(nn)); \
-    asm("ldd   %0,%1,%2[%3]":"=r"(s0),"=r"(s3):"r"(ss),"r"(nn)); \
-    asm("std   %0,%1,%2[%3]"::"r"(s3), "r"(s2),"r"(ss),"r"(nn)); \
-    asm("maccs %0,%1,%2,%3" :"=r"(ah),"=r"(al):"r"(b0),"r"(s2), "0"(ah),"1"(al)); \
-    asm("maccs %0,%1,%2,%3" :"=r"(ah),"=r"(al):"r"(b1),"r"(s3), "0"(ah),"1"(al));
-
-// 24 sample convolution using xCORE-200 assembly ("flexfx.h" doesn't support convolution).
-#define _CONVOLVE_24 \
-{ \
-    _CONVOLVE_2a(0) _CONVOLVE_2b(1) _CONVOLVE_2a( 2) _CONVOLVE_2b( 3) \
-    _CONVOLVE_2a(4) _CONVOLVE_2b(5) _CONVOLVE_2a( 6) _CONVOLVE_2b( 7) \
-    _CONVOLVE_2a(8) _CONVOLVE_2b(9) _CONVOLVE_2a(10) _CONVOLVE_2b(11) \
-}
-
-// 288 sample convolution using xCORE-200 assembly ("flexfx.h" doesn't support convolution).
-void _CONVOLVE_288( int* xx, int* cc, int* ss, int* ah_, int* al_ )
+// 288 sample convolution.
+// XX is the audio sample, CC and SS are filter coeffs and state, AH:AL is the 64-bit accumulator.
+void _convolve_288( int* xx, const int* cc, int* ss, int* ah, int* al )
 {
-    int ah = *ah_, b0, b1, s0 = *xx, s1, s2, s3; unsigned al = *al_;
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
-    _CONVOLVE_24; cc += 24; ss += 24; _CONVOLVE_24; cc += 24; ss += 24;
-    *xx = s0; *ah_ = ah; *al_ = al;
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps   0 -  24
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps  24 -  48
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps  48 -  72
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps  72 -  96
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps  96 - 119
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 120 - 143
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 144 - 167
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 168 - 191
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 192 - 215
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 216 - 239
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 240 - 263
+    *xx = dsp_convolve( *xx, cc, ss, ah, (unsigned*)al ); cc += 24; ss += 24; // Taps 264 - 287
 }
 
+// Cabinet simulation impulse response (IR) data (e.g. filter coefficients) and filter state.
 int cabsim_coeff[2880], cabsim_state[2880]; // DSP data *must* be non-static global!
 
 // Initialize DSP thread data (filter data and other algorithm data) here.
@@ -491,32 +477,32 @@ void dsp_thread1( int* samples, const int* property )
     samples[2] = 0; samples[3] = 1 << 31; // Initial 64-bit Q1.63 accumulator value
     samples[4] = 0; samples[5] = 1 << 31; // Initial 64-bit Q1.63 accumulator value
     // Perform 288-sample convolution (1st 288 of 1440 total) of sample with IR data
-    _CONVOLVE_288( &samples[0], cabsim_coeff+   0, cabsim_state+   0, &samples[2], &samples[3] );
-    _CONVOLVE_288( &samples[1], cabsim_coeff+1440, cabsim_state+1440, &samples[4], &samples[5] );
+    _convolve_288( &samples[0], cabsim_coeff+   0, cabsim_state+   0, &samples[2], &samples[3] );
+    _convolve_288( &samples[1], cabsim_coeff+1440, cabsim_state+1440, &samples[4], &samples[5] );
 }
 
 // Process samples (from stage 1) and properties. Send results to stage 3.
 void dsp_thread2( int* samples, const int* property )
 {
     // Perform 288-sample convolution (2nd 288 of 1440 total) of sample with IR data
-    _CONVOLVE_288( &samples[0], cabsim_coeff+ 288, cabsim_state+ 288, &samples[2], &samples[3] );
-    _CONVOLVE_288( &samples[1], cabsim_coeff+1728, cabsim_state+1728, &samples[4], &samples[5] );
+    _convolve_288( &samples[0], cabsim_coeff+ 288, cabsim_state+ 288, &samples[2], &samples[3] );
+    _convolve_288( &samples[1], cabsim_coeff+1728, cabsim_state+1728, &samples[4], &samples[5] );
 }
 
 // Process samples (from stage 2) and properties. Send results to stage 4.
 void dsp_thread3( int* samples, const int* property )
 {
     // Perform 288-sample convolution (3rd 288 of 1440 total) of sample with IR data
-    _CONVOLVE_288( &samples[0], cabsim_coeff+ 576, cabsim_state+ 576, &samples[2], &samples[3] );
-    _CONVOLVE_288( &samples[1], cabsim_coeff+2016, cabsim_state+2016, &samples[4], &samples[5] );
+    _convolve_288( &samples[0], cabsim_coeff+ 576, cabsim_state+ 576, &samples[2], &samples[3] );
+    _convolve_288( &samples[1], cabsim_coeff+2016, cabsim_state+2016, &samples[4], &samples[5] );
 }
 
 // Process samples (from stage 3) and properties. Send results to stage 5.
 void dsp_thread4( int* samples, const int* property )
 {
     // Perform 288-sample convolution (4th 288 of 1440 total) of sample with IR data
-    _CONVOLVE_288( &samples[0], cabsim_coeff+ 864, cabsim_state+ 864, &samples[2], &samples[3] );
-    _CONVOLVE_288( &samples[1], cabsim_coeff+2304, cabsim_state+2304, &samples[4], &samples[5] );
+    _convolve_288( &samples[0], cabsim_coeff+ 864, cabsim_state+ 864, &samples[2], &samples[3] );
+    _convolve_288( &samples[1], cabsim_coeff+2304, cabsim_state+2304, &samples[4], &samples[5] );
 }
 
 // Process samples (from stage 4) and properties. Send results to the mixer function.
@@ -530,11 +516,11 @@ void dsp_thread5( int* samples, const int* property )
         if( IR_PROP_IDX( property[0] ) == 2880/5-1 ) muted = 0; // Last IR property -- Un-Mute
     }
     // Perform 288-sample convolution (5th and last 288 of 1440 total) of sample with IR data
-    _CONVOLVE_288( &samples[0], cabsim_coeff+1152, cabsim_state+1152, &samples[2], &samples[3] );
-    _CONVOLVE_288( &samples[1], cabsim_coeff+2592, cabsim_state+2592, &samples[4], &samples[5] );
+    _convolve_288( &samples[0], cabsim_coeff+1152, cabsim_state+1152, &samples[2], &samples[3] );
+    _convolve_288( &samples[1], cabsim_coeff+2592, cabsim_state+2592, &samples[4], &samples[5] );
     // Extract 32-bit Q28 from 64-bit Q63 and then apply mute/un-mute based on IR loading activity.
-    DSP_EXT( samples[0], samples[2], samples[3] ); samples[0] = muted ? 0 : samples[0] * 1;
-    DSP_EXT( samples[1], samples[4], samples[5] ); samples[1] = muted ? 0 : samples[1] * 1;
+    DSP_EXT( samples[0], samples[2], samples[3] ); samples[0] = muted ? 0 : samples[0];
+    DSP_EXT( samples[1], samples[4], samples[5] ); samples[1] = muted ? 0 : samples[1];
 }
 ```
 
