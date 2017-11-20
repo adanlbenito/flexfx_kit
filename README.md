@@ -167,13 +167,13 @@ inline int dsp_multiply( int xx, int yy ) // RR = XX * YY
     asm("lextract %0,%1,%2,%3,32":"=r"(ah):"r"(ah),"r"(al),"r"(28));
     return ah;
 }
-inline int dsp_mult_acc( int xx, int yy, int aa ) // RR = XX * YY + AA
-{
-    int ah = aa; unsigned al = 0;
-    asm("maccs %0,%1,%2,%3":"=r"(ah),"=r"(al):"r"(xx),"r"(yy),"0"(ah),"1"(al) );
-    asm("lextract %0,%1,%2,%3,32":"=r"(ah):"r"(ah),"r"(al),"r"(28));
-    return ah;
-}
+
+// Lookup tables with 1024 values extended with 2 extra values for 2nd order interpolation.
+
+extern int dsp_sine_lut[1026]; // y = (sine(1*x))/1, 0 <= x < 1024, one full cycle from 0 to 2*PI
+extern int dsp_atan_lut[1026]; // y = (atan(8*x))/1, 0 <= x < 1024, 0 <= y[1025] <= 0.999999778
+extern int dsp_tanh_lut[1026]; // y = (tanh(8*x))/c, 0 <= x < 1024, 0 <= y[1025] <= 0.999999999
+extern int dsp_nexp_lut[1026]; // y = (1-e^(8*x))/1, 0 <= x < 1024, 0 <= y[1025] <= 0.999667148
 
 // Math and filter functions.
 //
@@ -186,8 +186,10 @@ inline int dsp_mult_acc( int xx, int yy, int aa ) // RR = XX * YY + AA
 // SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 1 for LPF/HPF/INT
 // KK is time constant for LPF, HPF and INT where KK = exp(-2.0 * PI * Fc)
 // AH (high) and AL (low) form the 64-bit signed accumulator
+// WET, DRY, MM are Q28 values.
 
 int dsp_random   ( int gg, int seed );                       // Random number, gg = previous value
+int dsp_blend    ( int xx, int yy, int mm );                 // 0 (100% XX) <= MM <= 1 (100% YY)
 int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
 int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
 int dsp_integrate( int xx, int kk, int* ss );                // Leaky integrator
