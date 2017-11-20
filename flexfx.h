@@ -40,7 +40,7 @@ extern void i2c_stop ( void );         // Assert an I2C stop condition.
 // PP is a 64-bit aligned pointer to two 32-bit Q28 values
 
 #define DSP_MAC( ah, al, xx, yy ) asm("maccs %0,%1,%2,%3":"=r"(ah),"=r"(al):"r"(xx),"r"(yy),"0"(ah),"1"(al) );
-#define DSP_SAT( ah, al )         asm("lsats %0,%1,%2":"=r"(ah),"=r"(al):"r"(31),"0"(ah),"1"(al));
+#define DSP_SAT( ah, al )         asm("lsats %0,%1,%2":"=r"(ah),"=r"(al):"r"(28),"0"(ah),"1"(al));
 #define DSP_EXT( xx, ah, al )     asm("lextract %0,%1,%2,%3,32":"=r"(xx):"r"(ah),"r"(al),"r"(28));
 #define DSP_LD2( pp, xx, yy )     asm("ldd %0,%1,%2[0]":"=r"(xx),"=r"(yy):"r"(pp));
 #define DSP_ST2( pp, xx, yy )     asm("std %0,%1,%2[0]"::"r"(xx), "r"(yy),"r"(pp));
@@ -59,6 +59,8 @@ inline int dsp_mult_acc( int xx, int yy, int aa ) // RR = XX * YY + AA
     asm("lextract %0,%1,%2,%3,32":"=r"(ah):"r"(ah),"r"(al),"r"(28));
     return ah;
 }
+
+extern int dsp_sine_lut[1030];
 
 // Math and filter functions.
 //

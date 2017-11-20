@@ -14,7 +14,7 @@ lib_dsp_adaptive.c lib_dsp_dct.xc lib_dsp_design.c lib_dsp_filters.c lib_dsp_mat
 
 echo Creating firmware image ...
 
-xflash --factory-version 14.2 --upgrade 1 $1.xe -o $1.bin
+xflash --no-compression --factory-version 14.2 --upgrade 1 $1.xe -o $1.bin
 
 rm $1.xe
 

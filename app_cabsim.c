@@ -4,15 +4,15 @@
 
 // System configuration ...
 
-const char* company_name_string    = "BitStream"; // Your company name
-const char* product_name_string    = "FlexFX CAB";// Your product name
-const int   default_sample_rate    = 48000;       // Default sample rate at boot-up
-const int   supported_sample_rates = 0x02;        // 1=44k1, 2=48k0, 4=88k2, ... 32=192k0
-const int   dsp_channel_count      = 32;          // 32 channels to/from each DSP thread
-const int   usb_output_chan_count  = 2;           // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count   = 2;           // 2 USB audio class 2.0 input channels
-const int   i2s_tdm_slot_count     = 2;           // 2 for I2S (Stereo), 4 for I4S, 8 = I8S
-const int   i2s_sync_word_format   = 0;           // 0 for PCM, 1 for I2S
+const char* company_name_string    = "FlexFX";        // Your company name
+const char* product_name_string    = "FlexFX Cabsim"; // Your product name
+const int   default_sample_rate    = 48000; // Default sample rate at boot-up
+const int   supported_sample_rates = 0x02;  // 1=44k1, 2=48k0, 4=88k2, ... 32=192k0
+const int   dsp_channel_count      = 32;    // 32 channels to/from each DSP thread
+const int   usb_output_chan_count  = 2;     // 2 USB audio class 2.0 output channels
+const int   usb_input_chan_count   = 2;     // 2 USB audio class 2.0 input channels
+const int   i2s_tdm_slot_count     = 2;     // 2 for I2S (Stereo), 4 for I4S, 8 = I8S
+const int   i2s_sync_word_format   = 0;     // 0 for PCM, 1 for I2S
 
 // Custom/example properties for this example application ...
 
