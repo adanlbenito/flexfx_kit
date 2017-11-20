@@ -288,10 +288,8 @@ https://raw.githubusercontent.com/markseel/flexfx_kit/master/app_cabsim.mp4
 #include <math.h>   // Floating point for filter coeff calculations in the background process.
 #include <string.h>
 
-// System configuration ...
-
-const char* company_name_string    = "BitStream"; // Your company name
-const char* product_name_string    = "FlexFX";    // Your product name
+const char* company_name_string    = "Company";   // Your company name
+const char* product_name_string    = "Product";   // Your product name
 const int   default_sample_rate    = 48000;       // Default sample rate at boot-up
 const int   supported_sample_rates = 0x02;        // 1=44k1, 2=48k0, 4=88k2, ... 32=192k0
 const int   dsp_channel_count      = 32;          // 32 channels to/from each DSP thread
@@ -299,8 +297,6 @@ const int   usb_output_chan_count  = 2;           // 2 USB audio class 2.0 outpu
 const int   usb_input_chan_count   = 2;           // 2 USB audio class 2.0 input channels
 const int   i2s_tdm_slot_count     = 2;           // 2 for I2S (Stereo), 4 for I4S, 8 = I8S
 const int   i2s_sync_word_format   = 0;           // 0 for PCM, 1 for I2S
-
-// Custom/example properties for this example application ...
 
 #define PROP_PRODUCT_ID      0x0101                      // Your product ID, must not be 0x0000!
 #define PROP_EXAMPLE_PROPS   (PROP_PRODUCT_ID << 16)     // Base property ID value
@@ -311,10 +307,7 @@ const int   i2s_sync_word_format   = 0;           // 0 for PCM, 1 for I2S
 #define IR_PROP_ID(xx)  ((xx) & 0xFFFF8000) // IR property ID has two parts (ID and offset)
 #define IR_PROP_IDX(xx) ((xx) & 0x00000FFF) // Up to 5*0xFFF samples (5 samples per property)
 
-// I2C controlled 4-channel 12-bit ADC (results are returned in floating point format where
-// 0 <= value < 1.0).
-
-static void adc_read( double values[4] )
+static void adc_read( double values[4] ) // I2C controlled 4-channel ADC (0.0 <= value < 1.0).
 {
     byte ii, hi, lo, value;
     i2c_start( 100000 ); // Set bit clock to 400 kHz and assert start condition.
@@ -327,14 +320,6 @@ static void adc_read( double values[4] )
     }
     i2c_stop();
 }
-
-// The control task is called at a rate of 1000 Hz and should be used to implement audio CODEC
-// initialization/control, pot and switch sensing via I2C ADC's, handling of properties from USB
-// MIDI, and generation of properties to be consumed by the USB MIDI host and by the DSP threads.
-// The incoming USB property 'rcv_prop' is valid if its ID is non-zero. Outgoing USB and DSP props
-// will be sent out if their ID is non-zero - but they are only available for routing if their ID's
-// are zero (non-zero indicating that routing is still in progress). It's OK to use floating point
-// calculations here since this thread is not a real-time audio or DSP thread.
 
 void make_prop( int prop[6], int id, int val1, int val2, int val3, int val4, int val5 )
 {
@@ -389,13 +374,6 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     }
 }
 
-// The mixer function is called once per audio sample and is used to route USB, I2S and DSP samples.
-// This function should only be used to route samples and for very basic DSP processing - not for
-// substantial sample processing since this may starve the I2S audio driver. Do not use floating
-// point operations since this is a real-time audio thread - all DSP operations and calculations
-// should be performed using fixed-point math.
-// NOTE: IIR, FIR, and BiQuad coefficients and state data *must* be declared non-static global!
-
 // Single-pole low pass filter implemented with a biquad IIR (only uses B0,B1,A1 coeffs).
 int lopass_coeffs[5] = {FQ(1.0),0,0,0,0};
 int lopass_stateL[4] = {0,0,0,0}, lopass_stateR[4] = {0,0,0,0}; // Initial filter state/history.
@@ -434,17 +412,9 @@ void mixer( const int* usb_output, int* usb_input,
     port_write( 2, port_read(1) != 0 );
 }
 
-// Audio Processing Threads. These functions run on tile 1 and are called once for each audio sample
-// cycle. They cannot share data with the controller task or the mixer functions above that run on
-// tile 0. The number of incoming and outgoing samples in the 'samples' array is set by the constant
-// 'dsp_chan_count' defined above. Do not use floating point operations since these are real-time
-// audio threads - all DSP operations and calculations should be performed using fixed-point math.
-// NOTE: IIR, FIR, and BiQuad coefficients and state data *must* be declared non-static global!
-
 // Cabinet simulation impulse response (IR) data (e.g. filter coefficients) and filter state.
 int ir_coeff[2400], ir_state[2400]; // DSP data *must* be non-static global!
 
-// Initialize DSP thread data (filter data and other algorithm data) here.
 void dsp_initialize( void ) // Called once upon boot-up.
 {
     memset( &ir_coeff, 0, sizeof(ir_coeff) );
@@ -452,7 +422,6 @@ void dsp_initialize( void ) // Called once upon boot-up.
     ir_coeff[0] = ir_coeff[1200] = FQ(+1.0);
 }
 
-// Process samples (from the mixer function) and properties. Send results to stage 2.
 void dsp_thread1( int* samples, const int* property )
 {
     // Check for properties containing new cabsim IR data, save new data to RAM
@@ -471,7 +440,6 @@ void dsp_thread1( int* samples, const int* property )
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*5, ir_state+240*5, samples+4, samples+5 );
 }
 
-// Process samples (from stage 1) and properties. Send results to stage 3.
 void dsp_thread2( int* samples, const int* property )
 {
     // Perform 240-sample convolution (2nd 240 of 1220 total) of sample with IR data
@@ -479,7 +447,6 @@ void dsp_thread2( int* samples, const int* property )
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*6, ir_state+240*6, samples+4, samples+5 );
 }
 
-// Process samples (from stage 2) and properties. Send results to stage 4.
 void dsp_thread3( int* samples, const int* property )
 {
     // Perform 240-sample convolution (3rd 240 of 1220 total) of sample with IR data
@@ -487,7 +454,6 @@ void dsp_thread3( int* samples, const int* property )
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*7, ir_state+240*7, samples+4, samples+5 );
 }
 
-// Process samples (from stage 3) and properties. Send results to stage 5.
 void dsp_thread4( int* samples, const int* property )
 {
     // Perform 240-sample convolution (4th 240 of 1220 total) of sample with IR data
@@ -495,7 +461,6 @@ void dsp_thread4( int* samples, const int* property )
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*8, ir_state+240*8, samples+4, samples+5 );
 }
 
-// Process samples (from stage 4) and properties. Send results to the mixer function.
 void dsp_thread5( int* samples, const int* property )
 {
     static bool muted = 0;
@@ -705,38 +670,21 @@ https://raw.githubusercontent.com/markseel/flexfx_kit/master/app_chorus.mp4
 #include <math.h>   // Floating point for filter coeff calculations in the background process.
 #include <string.h>
 
-// System configuration ...
-
-const char* company_name_string    = "FlexFX";        // Your company name
-const char* product_name_string    = "FlexFX Chorus"; // Your product name
-const int   default_sample_rate    = 48000; // Default sample rate at boot-up
-const int   supported_sample_rates = 0x02;  // 1=44k1, 2=48k0, 4=88k2, ... 32=192k0
-const int   dsp_channel_count      = 32;    // 32 channels to/from each DSP thread
-const int   usb_output_chan_count  = 2;     // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count   = 2;     // 2 USB audio class 2.0 input channels
-const int   i2s_tdm_slot_count     = 2;     // 2 for I2S (Stereo), 4 for I4S, 8 = I8S
-const int   i2s_sync_word_format   = 0;     // 0 for PCM, 1 for I2S
-
-// The control task is called at a rate of 1000 Hz and should be used to implement audio CODEC
-// initialization/control, pot and switch sensing via I2C ADC's, handling of properties from USB
-// MIDI, and generation of properties to be consumed by the USB MIDI host and by the DSP threads.
-// The incoming USB property 'rcv_prop' is valid if its ID is non-zero. Outgoing USB and DSP props
-// will be sent out if their ID is non-zero - but they are only available for routing if their ID's
-// are zero (non-zero indicating that routing is still in progress). It's OK to use floating point
-// calculations here since this thread is not a real-time audio or DSP thread.
+const char* company_name_string    = "Company"; // Your company name
+const char* product_name_string    = "Product"; // Your product name
+const int   default_sample_rate    = 48000;     // Default sample rate at boot-up
+const int   supported_sample_rates = 0x02;      // 1=44k1, 2=48k0, 4=88k2, ... 32=192k0
+const int   dsp_channel_count      = 32;        // 32 channels to/from each DSP thread
+const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
+const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
+const int   i2s_tdm_slot_count     = 2;         // 2 for I2S (Stereo), 4 for I4S, 8 = I8S
+const int   i2s_sync_word_format   = 0;         // 0 for PCM, 1 for I2S
 
 void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
     // If outgoing USB or DSP properties are still use then come back later ...
     if( usb_prop[0] != 0 || usb_prop[0] != 0 ) return;
 }
-
-// The mixer function is called once per audio sample and is used to route USB, I2S and DSP samples.
-// This function should only be used to route samples and for very basic DSP processing - not for
-// substantial sample processing since this may starve the I2S audio driver. Do not use floating
-// point operations since this is a real-time audio thread - all DSP operations and calculations
-// should be performed using fixed-point math.
-// NOTE: IIR, FIR, and BiQuad coeff and state data *must* be declared non-static global!
 
 void mixer( const int* usb_output, int* usb_input,
             const int* i2s_output, int* i2s_input,
@@ -748,19 +696,10 @@ void mixer( const int* usb_output, int* usb_input,
     i2s_input[7] = dsp_output[1]; // Line out right channel = DSP output right channel
 }
 
-// Audio Processing Threads. These functions run on tile 1 and are called once for each audio sample
-// cycle. They cannot share data with the controller task or the mixer functions above that run on
-// tile 0. The number of incoming and outgoing samples in the 'samples' array is set by the constant
-// 'dsp_chan_count' defined above. Do not use floating point operations since these are real-time
-// audio threads - all DSP operations and calculations should be performed using fixed-point math.
-// NOTE: IIR, FIR, and BiQuad coeff and state data *must* be declared non-static global!
-
-// Initialize DSP thread data (filter data and other algorithm data) here.
 void dsp_initialize( void ) // Called once upon boot-up.
 {
 }
 
-// Process samples (from the mixer function) and properties. Send results to stage 2.
 void dsp_thread1( int* samples, const int* property )
 {
     // Define LFO frequencies
@@ -782,7 +721,6 @@ void dsp_thread1( int* samples, const int* property )
     samples[3] = dsp_multiply( samples[3], FQ(0.999) ); // LFO #2 stored in sample 3 for later use.
 }
 
-// Process samples (from stage 1) and properties. Send results to stage 3.
 void dsp_thread2( int* samples, const int* property )
 {
     // --- Generate wet signal #1 using LFO #1
@@ -799,7 +737,6 @@ void dsp_thread2( int* samples, const int* property )
     samples[2] = dsp_lagrange( ff, delay_fifo[i1], delay_fifo[i2], delay_fifo[i3] );
 }
 
-// Process samples (from stage 2) and properties. Send results to stage 4.
 void dsp_thread3( int* samples, const int* property )
 {
     // --- Generate wet signal #2 using LFO #2
@@ -816,7 +753,6 @@ void dsp_thread3( int* samples, const int* property )
     samples[3] = dsp_lagrange( ff, delay_fifo[i1], delay_fifo[i2], delay_fifo[i3] );
 }
 
-// Process samples (from stage 3) and properties. Send results to stage 5.
 void dsp_thread4( int* samples, const int* property )
 {
     int blend1 = FQ(+0.50), blend2 = FQ(+0.30);;
@@ -826,7 +762,6 @@ void dsp_thread4( int* samples, const int* property )
     samples[0] = samples[1] = samples[2]/2 + samples[3]/2;
 }
 
-// Process samples (from stage 4) and properties. Send results to the mixer function.
 void dsp_thread5( int* samples, const int* property )
 {
 }
