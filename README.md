@@ -766,7 +766,7 @@ void dsp_thread5( int* samples, const int* property )
 {
 }
 ```
-Example Application #2 - Overdrive
+Example Application #3 - Overdrive
 ----------------------------------
 
 Overdrive example demonstrating up/down sampling, anti-aliasing filters, and the use of look-up tables and lagrange interpolation to 
