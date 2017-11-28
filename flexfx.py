@@ -259,7 +259,7 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
     sys.stdout.flush()
     midi_write( midi, data )
     for ii in range(0,5):
-        time.sleep( 1 )
+        time.sleep( 1.1 )
         sys.stdout.write(".")
         sys.stdout.flush()
     sys.stdout.write("Writing")
@@ -275,10 +275,10 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
         midi_write( midi, property_to_midi_sysex( data ))
         #prop = midi_sysex_to_property( midi_wait( midi ));
         if count == 0 or (count % 16) == 0:
-            if count == 0 or (count % 64) == 0:
+            if count == 0 or (count % 256) == 0:
                 sys.stdout.write(".")
                 sys.stdout.flush()
-            time.sleep( 0.01 )
+            time.sleep( 0.013 )
         time.sleep( 0.001 )
         count += 1
     data = property_to_midi_sysex( [3,0,0,0,0,0] )

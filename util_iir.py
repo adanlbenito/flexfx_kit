@@ -78,7 +78,9 @@ def _make_biquad_notch( filter_freq, q_factor ):
 	a1 = -2.0 * np.cos(w0)
 	a2 = +1.0 - alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+	plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-60, ymax=6 )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 def _make_biquad_lowpass( filter_freq, q_factor ):
 
@@ -92,7 +94,9 @@ def _make_biquad_lowpass( filter_freq, q_factor ):
 	a1 = -2.0 * np.cos(w0)
 	a2 = +1.0 - alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+	plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-60, ymax=6 )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 def _make_biquad_highpass( filter_freq, q_factor ):
 
@@ -106,7 +110,9 @@ def _make_biquad_highpass( filter_freq, q_factor ):
 	a1 =  -2.0 * np.cos(w0)
 	a2 =  +1.0 - alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+	plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-60, ymax=6 )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 def _make_biquad_allpass( filter_freq, q_factor ):
 
@@ -120,7 +126,9 @@ def _make_biquad_allpass( filter_freq, q_factor ):
 	a1 =  -2.0 * np.cos(w0)
 	a2 =  +1.0 - alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+	plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-6, ymax=6 )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 # Constant 0 dB peak gain
 # FIXME: Results in a peaking filter at freq1 rather than BP filter that's flat within the pass-band
@@ -137,7 +145,9 @@ def _make_biquad_bandpass( filter_freq, filter_freq2 ):
 	a1 =  -2.0 * np.cos(w0)
 	a2 =  +1.0 - alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+	plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-60, ymax=6 )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 # gain can be + or -
 def _make_biquad_peaking( filter_freq, q_factor, gain_db ):
@@ -153,7 +163,11 @@ def _make_biquad_peaking( filter_freq, q_factor, gain_db ):
 	a1 = -2.0 * np.cos(w0)
 	a2 = +1.0 - alpha / A
 
-	return (b0,b1,b2,a0,a1,a2)
+    if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
+	if gain_db  < 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3+gain_db, ymax=3 )
+	if gain_db  > 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3+gain_db )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 def _make_biquad_lowshelf( filter_freq, q_factor, gain_db ):
 
@@ -169,7 +183,11 @@ def _make_biquad_lowshelf( filter_freq, q_factor, gain_db ):
 	a1 =   -2*( (A-1) + (A+1)*np.cos(w0)                   )
 	a2 =        (A+1) + (A-1)*np.cos(w0) - 2*np.sqrt(A)*alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+    if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
+	if gain_db  < 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3+gain_db, ymax=3 )
+	if gain_db  > 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3+gain_db )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 def _make_biquad_highshelf( filter_freq, q_factor, gain_db ):
 
@@ -185,7 +203,11 @@ def _make_biquad_highshelf( filter_freq, q_factor, gain_db ):
 	a1 =    2*( (A-1) - (A+1)*np.cos(w0)                   )
 	a2 =        (A+1) - (A-1)*np.cos(w0) - 2*np.sqrt(A)*alpha
 
-	return (b0,b1,b2,a0,a1,a2)
+    if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
+	if gain_db  < 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3+gain_db, ymax=3 )
+	if gain_db  > 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3+gain_db )
+
+	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 if type == "notch":      (b0,b1,b2,a0,a1,a2) = _make_biquad_notch    ( freq, Q )
 if type == "lowpass":    (b0,b1,b2,a0,a1,a2) = _make_biquad_lowpass  ( freq, Q )
@@ -195,14 +217,3 @@ if type == "bandpass":   (b0,b1,b2,a0,a1,a2) = _make_biquad_bandpass ( freq, Q )
 if type == "peaking":    (b0,b1,b2,a0,a1,a2) = _make_biquad_peaking  ( freq, Q, gain )
 if type == "highshelf":  (b0,b1,b2,a0,a1,a2) = _make_biquad_highshelf( freq, Q, gain )
 if type == "lowshelf":   (b0,b1,b2,a0,a1,a2) = _make_biquad_lowshelf ( freq, Q, gain )
-
-if type == "peaking" or type == "highshelf" or type == "lowshelf":
-    if gain > 0:
-        plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-3, ymax=3+gain )
-    if gain < 0:
-        plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-3+gain, ymax=3 )
-else:
-    plot_response( [b0,b1,b2], [a0,a1,a2], ymin=-60, ymax=6 )
-
-print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,a1/a0,a2/a0)
-

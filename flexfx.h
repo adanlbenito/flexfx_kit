@@ -52,32 +52,49 @@ inline int dsp_multiply( int xx, int yy ) // RR = XX * YY
     asm("lextract %0,%1,%2,%3,32":"=r"(ah):"r"(ah),"r"(al),"r"(28));
     return ah;
 }
-inline int dsp_mult_acc( int xx, int yy, int aa ) // RR = XX * YY + AA
-{
-    int ah = aa; unsigned al = 0;
-    asm("maccs %0,%1,%2,%3":"=r"(ah),"=r"(al):"r"(xx),"r"(yy),"0"(ah),"1"(al) );
-    asm("lextract %0,%1,%2,%3,32":"=r"(ah):"r"(ah),"r"(al),"r"(28));
-    return ah;
-}
 
-extern int dsp_sine_lut[1030];
+// Lookup tables with 256, 1024, 4096, and 16384 values extended with 2 extra values for 2nd order
+// interpolation.
+
+extern int dsp_sine_08[ 258];  // y = (sine(1*x))/1, 0 <= x <   256, one full cycle from 0 to 2*PI
+extern int dsp_atan_08[ 258];  // y = (atan(8*x))/1, 0 <= x <   256, 0.0 <= y[  255] < 1.0
+extern int dsp_tanh_08[ 258];  // y = (tanh(8*x))/c, 0 <= x <   256, 0.0 <= y[  255] < 1.0
+extern int dsp_nexp_08[ 258];  // y = (1-e^(8*x))/1, 0 <= x <   256, 0.0 <= y[  255] < 1.0
+
+extern int dsp_sine_10[1026];  // y = (sine(1*x))/1, 0 <= x <  1024, one full cycle from 0 to 2*PI
+extern int dsp_atan_10[1026];  // y = (atan(8*x))/1, 0 <= x <  1024, 0.0 <= y[ 1023] < 1.0
+extern int dsp_tanh_10[1026];  // y = (tanh(8*x))/c, 0 <= x <  1024, 0.0 <= y[ 1023] < 1.0
+extern int dsp_nexp_10[1026];  // y = (1-e^(8*x))/1, 0 <= x <  1024, 0.0 <= y[ 1023] < 1.0
+
+extern int dsp_sine_12[4098];  // y = (sine(1*x))/1, 0 <= x <  4096, one full cycle from 0 to 2*PI
+extern int dsp_atan_12[4098];  // y = (atan(8*x))/1, 0 <= x <  4096, 0.0 <= y[ 4095] < 1.0
+extern int dsp_tanh_12[4098];  // y = (tanh(8*x))/c, 0 <= x <  4096, 0.0 <= y[ 4095] < 1.0
+extern int dsp_nexp_12[4098];  // y = (1-e^(8*x))/1, 0 <= x <  4096, 0.0 <= y[ 4095] < 1.0
+
+extern int dsp_sine_14[16386]; // y = (sine(1*x))/1, 0 <= x < 16384, one full cycle from 0 to 2*PI
+extern int dsp_atan_14[16386]; // y = (atan(8*x))/1, 0 <= x < 16384, 0.0 <= y[16383] < 1.0
+extern int dsp_tanh_14[16386]; // y = (tanh(8*x))/c, 0 <= x < 16384, 0.0 <= y[16383] < 1.0
+extern int dsp_nexp_14[16386]; // y = (1-e^(8*x))/1, 0 <= x < 16384, 0.0 <= y[16383] < 1.0
 
 // Math and filter functions.
 //
-// XX, CC, SS, Yn, and AA are 32-bit fixed point samples/data in Q28 format
+// XX, CC, SS, Yn, MM, and AA are 32-bit fixed point samples/data in Q28 format
 // DD is the distance (0<=DD<1) between the first two points for interpolation
 // Yn are the data points to be interpolated
 // NN is FIR filter tap-count for 'fir', 'upsample', 'dnsample' and 'convolve' functions
 // NN is IIR filter order or or IIR filter count for cascaded IIR's
 // CC is array of 32-bit filter coefficients - length is 'nn' for FIR, nn * 5 for IIR
-// SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 1 for LPF/HPF/INT
+// SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 3 for DCBLOCK
 // KK is time constant for LPF, HPF and INT where KK = exp(-2.0 * PI * Fc)
 // AH (high) and AL (low) form the 64-bit signed accumulator
+// WET, DRY, MM are Q28 values.
 
 int dsp_random   ( int gg, int seed );                       // Random number, gg = previous value
-int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
-int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
+int dsp_blend    ( int xx, int yy, int mm );                 // 0 (100% XX) <= MM <= 1 (100% YY)
+int dsp_interp   ( int dd, int y1, int y2 );                 // 1st\] order (linear) interpolation
+int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // 2nd order (Lagrange) interpolation
 int dsp_integrate( int xx, int kk, int* ss );                // Leaky integrator
+int dsp_dcblock  ( int xx, int* ss );                        // DC blocker
 int dsp_fir_filt ( int xx, const int* cc, int* ss, int nn ); // FIR filter of nn taps
 int dsp_iir_filt ( int xx, const int* cc, int* ss, int nn ); // nn Cascaded bi-quad IIR filters
 int dsp_convolve ( int xx, const int* cc, int* ss, int* ah, int* al ); // 240 tap FIR convolution
@@ -96,3 +113,4 @@ void make_bandpass ( int cc[5], double ff1, double ff2 );
 void make_peaking  ( int cc[5], double ff, double qq, double gg );
 void make_lowshelf ( int cc[5], double ff, double qq, double gg );
 void make_highshelf( int cc[5], double ff, double qq, double gg );
+
