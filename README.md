@@ -826,42 +826,39 @@ int antialias_state1[64], antialias_state2[64], antialias_coeff[64] =
     FQ(-0.000014901),FQ(-0.000005357),FQ(-0.000001205),FQ(-0.000000077)
 };
 
-// util_iir.py highpass 0.0003 0.707 0, util_iir.py highshelf 0.0002 0.707 6.0
-int emphasis1_state[12] = {0,0,0,0,0,0,0,0,0,0,0,0}, emphasis1_coeff[15] =
+// util_iir.py highpass 0.0003 0.707 0, util_iir.py peaking 0.001 0.707 +6.0
+int emphasis1_state[8] = {0,0,0,0,0,0,0,0}, emphasis1_coeff[10] =
 {
     FQ(+0.998667822),FQ(-1.997335644),FQ(+0.998667822),FQ(+1.997333870),FQ(-0.997337419),
-    FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
-    FQ(1.0), FQ(0.0), FQ(0.0), FQ(0.0), FQ(0.0),
+    FQ(+1.003121053),FQ(-1.993688826),FQ(+0.990607128),FQ(+1.993688826),FQ(-0.993728181),
 };
-// util_iir.py highpass 0.0002 0.707 0, util_iir.py highshelf 0.0002 0.707 6.0
-int emphasis2_state[12] = {0,0,0,0,0,0,0,0,0,0,0,0}, emphasis2_coeff[15] =
+// util_iir.py highpass 0.0002 0.707 0, util_iir.py peaking 0.002 0.707 +6.0
+int emphasis2_state[8] = {0,0,0,0,0,0,0,0}, emphasis2_coeff[10] =
 {
     FQ(+0.999111684),FQ(-1.998223368),FQ(+0.999111684),FQ(+1.998222579),FQ(-0.998224157),
     FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
-    FQ(1.0), FQ(0.0), FQ(0.0), FQ(0.0), FQ(0.0),
 };
-// util_iir.py highpass 0.0001 0.707 0, util_iir.py highshelf 0.0002 0.707 6.0
-int emphasis3_state[12] = {0,0,0,0,0,0,0,0,0,0,0,0}, emphasis3_coeff[15] =
+// util_iir.py highpass 0.0001 0.707 0, util_iir.py lowpass 0.001 0.707 -3.0
+int emphasis3_state[8] = {0,0,0,0,0,0,0,0}, emphasis3_coeff[10] =
 {
     FQ(+0.999555743),FQ(-1.999111487),FQ(+0.999555743),FQ(+1.999111289),FQ(-0.999111684),
-    FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
-    FQ(1.0), FQ(0.0), FQ(0.0), FQ(0.0), FQ(0.0),
+    FQ(+0.996194429),FQ(-1.973695761),FQ(+0.977744852),FQ(+1.973695761),FQ(-0.973939281),
 };
 
-// util_iir.py lowpass 0.1 0.707 0.0
+// util_iir.py lowpass 0.09 0.707 0
 int lowpass1_state[4] = {0,0,0,0}, lowpass1_coeff[5] =
 {
-    FQ(+0.067452283),FQ(+0.134904566),FQ(+0.067452283),FQ(+1.142929821),FQ(-0.412738952),
+    FQ(+0.056446120),FQ(+0.112892239),FQ(+0.056446120),FQ(+1.224600759),FQ(-0.450385238),
 };
-// util_iir.py lowpass 0.1 0.707 0.0
+// util_iir.py lowpass 0.03 0.707 0
 int lowpass2_state[4] = {0,0,0,0}, lowpass2_coeff[5] =
 {
-    FQ(+0.067452283),FQ(+0.134904566),FQ(+0.067452283),FQ(+1.142929821),FQ(-0.412738952),
+    FQ(+0.007820070),FQ(+0.015640140),FQ(+0.007820070),FQ(+1.734695116),FQ(-0.765975395),
 };
-// util_iir.py lowpass 0.1 0.707 0.0
+// util_iir.py lowpass 0.01 0.707 0
 int lowpass3_state[4] = {0,0,0,0}, lowpass3_coeff[5] =
 {
-    FQ(+0.067452283),FQ(+0.134904566),FQ(+0.067452283),FQ(+1.142929821),FQ(-0.412738952),
+    FQ(+0.000944686),FQ(+0.001889372),FQ(+0.000944686),FQ(+1.911184796),FQ(-0.914963539),
 };
 
 // Simple preamp model (-1.0 <= output < +1.0)
@@ -877,12 +874,12 @@ int preamp_model( int xx, int gain, int bias, int slewlim, int* state )
     // Table lookup
     if( xx >= 0 ) {
         int ii = (xx & 0xFFFFC000) >> 14, ff = (xx & 0x00003FFF) << 14;
-        if( ii > 16381 ) ii = 16381;
-        xx = dsp_lagrange( ff, dsp_atan_14[ii+0], dsp_atan_14[ii+1], dsp_atan_14[ii+2] );
+        if( ii > 16383 ) ii = 16383;
+        xx = dsp_lagrange( ff, dsp_tanh_14[ii+0], dsp_tanh_14[ii+1], dsp_tanh_14[ii+2] );
     } else {
         int ii = (-xx & 0xFFFFC000) >> 14, ff = (-xx & 0x00003FFF) << 14;
-        if( ii > 16381 ) ii = 16381;
-        xx = -dsp_lagrange( ff, dsp_atan_14[ii+0], dsp_atan_14[ii+1], dsp_atan_14[ii+2] );
+        if( ii > 16383 ) ii = 16383;
+        xx = -dsp_lagrange( ff, dsp_tanh_14[ii+0], dsp_tanh_14[ii+1], dsp_tanh_14[ii+2] );
     }
     // Slew rate limit
     if( xx > state[2] + slewlim ) { xx = state[2] + slewlim; state[2] = xx; }
@@ -898,7 +895,7 @@ void dsp_initialize( void ) // Called once upon boot-up.
 
 void dsp_thread1( int* samples, const int* property ) // Upsample
 {
-    // Up-sample by 4x by inserting zeros then apply the anti-aliasing filter
+    // Up-sample by 2x by inserting zeros then apply the anti-aliasing filter
     samples[0] = 4 * dsp_fir_filt( samples[0], antialias_coeff, antialias_state1, 64 );
     samples[1] = 4 * dsp_fir_filt( 0,          antialias_coeff, antialias_state1, 64 );
 }
@@ -906,11 +903,9 @@ void dsp_thread1( int* samples, const int* property ) // Upsample
 void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
 {
     // Perform stage 1 overdrive on the two up-sampled samples for the left channel.
-
     samples[0] = dsp_iir_filt( samples[0], emphasis1_coeff, emphasis1_state, 2 );
     samples[0] = preamp_model( samples[0], FQ(1.0), FQ(0.0), FQ(0.40), preamp1 );
     samples[0] = dsp_iir_filt( samples[0], lowpass1_coeff, lowpass1_state, 1 );
-
     samples[1] = dsp_iir_filt( samples[1], emphasis1_coeff, emphasis1_state, 2 );
     samples[1] = preamp_model( samples[1], FQ(1.0), FQ(0.0), FQ(0.40), preamp1 );
     samples[1] = dsp_iir_filt( samples[1], lowpass1_coeff, lowpass1_state, 1 );
@@ -919,11 +914,9 @@ void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
 void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
 {
     // Perform stage 2 overdrive on the two up-sampled samples for the left channel.
-
     samples[0] = dsp_iir_filt( samples[0], emphasis2_coeff, emphasis2_state, 2 );
     samples[0] = preamp_model( samples[0], FQ(1.0), FQ(0.0), FQ(0.20), preamp2 );
     samples[0] = dsp_iir_filt( samples[0], lowpass2_coeff, lowpass2_state, 1 );
-
     samples[1] = dsp_iir_filt( samples[1], emphasis2_coeff, emphasis2_state, 2 );
     samples[1] = preamp_model( samples[1], FQ(1.0), FQ(0.0), FQ(0.20), preamp2 );
     samples[1] = dsp_iir_filt( samples[1], lowpass2_coeff, lowpass2_state, 1 );
@@ -932,11 +925,9 @@ void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
 void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
 {
     // Perform stage 3 overdrive on the two up-sampled samples for the left channel.
-
     samples[0] = dsp_iir_filt( samples[0], emphasis3_coeff, emphasis3_state, 2 );
     samples[0] = preamp_model( samples[0], FQ(1.0), FQ(0.0), FQ(0.05), preamp3 );
     samples[0] = dsp_iir_filt( samples[0], lowpass3_coeff, lowpass3_state, 1 );
-
     samples[1] = dsp_iir_filt( samples[1], emphasis3_coeff, emphasis3_state, 2 );
     samples[1] = preamp_model( samples[1], FQ(1.0), FQ(0.0), FQ(0.05), preamp3 );
     samples[1] = dsp_iir_filt( samples[1], lowpass3_coeff, lowpass3_state, 1 );
@@ -944,7 +935,7 @@ void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
 
 void dsp_thread5( int* samples, const int* property ) // Downsample
 {
-    // Down-sample by 4x by band-limiting via anti-aliasing filter and then discarding 3/4 samples.
+    // Down-sample by 2x by band-limiting via anti-aliasing filter and then discarding 1 sample.
     samples[0] = dsp_fir_filt( samples[0], antialias_coeff, antialias_state2, 64 );
                  dsp_fir_filt( samples[1], antialias_coeff, antialias_state2, 64 );
 }
