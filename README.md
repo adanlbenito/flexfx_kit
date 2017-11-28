@@ -769,9 +769,9 @@ void dsp_thread5( int* samples, const int* property )
 Example Application #3 - Overdrive
 ----------------------------------
 
-Overdrive example demonstrating up/down sampling, anti-aliasing filters, and the use of look-up tables and lagrange interpolation to 
+Overdrive example demonstrating up/down sampling, anti-aliasing filters, and the use of look-up tables and Lagrange interpolation to 
 create a simple preamp model. Up/down sampling by a factor of 2 brings the internal sampling rate to 384 kHz to help manage the 
-alialising of harmonics created from the nonlinear beharvior of the preamp.
+aliasing of harmonics created from the nonlinear behavior of the preamp.
 
 ```C
 #include "flexfx.h"
