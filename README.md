@@ -13,6 +13,8 @@ upgrades allowing custom audio application development to remain focused on cust
 run-time algorithm control. The audio processing framework is provided in the form of object code that can be
 linked with custom audio processing code resulting in a complete audio processing firmware image.
 
+Comments and questions are welcome! flexfx@protonmail.com
+
 Framework Features
 ----------------------------------
 
