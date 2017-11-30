@@ -13,6 +13,8 @@ upgrades allowing custom audio application development to remain focused on cust
 run-time algorithm control. The audio processing framework is provided in the form of object code that can be
 linked with custom audio processing code resulting in a complete audio processing firmware image.
 
+Comments and questions are welcome! flexfx@protonmail.com
+
 Framework Features
 ----------------------------------
 
@@ -20,7 +22,9 @@ Framework Features
 * Up to 500 MIPs available for signal processing algorithms (FlexFX module with XUF216)
 * Up to 1500 MIPs available for signal processing algorithms (FlexFX module with XEF232)
 * 32/64 bit fixed point DSP support, single-cycle instructions
-* Up to 32x32 channel USB audio, up to 384 kHz audio sample rate
+* Up to 32x32 (48 kHz) channels of USB and I2S audio, up to 384 kHz audio sample rate at 8x8
+* Single audio cycle DSP processing for all 32 channels (e.g. audio block size = 1)
+* System latency (ADC I2S to DSP to DAC I2S) of 16 audio cycles (16/Fs). 
 * USB interface for USB audio streaming ad USB MIDI for effects control and firmware updating
 * Functions for I2C bus (for peripheral control) and port input/output
 * I2S supports up to 8-slot TDM and up to four separate ADCs and four separate DACs
@@ -766,12 +770,12 @@ void dsp_thread5( int* samples, const int* property )
 {
 }
 ```
-Example Application #2 - Overdrive
+Example Application #3 - Overdrive
 ----------------------------------
 
-Overdrive example demonstrating up/down sampling, anti-aliasing filters, and the use of look-up tables and lagrange interpolation to 
+Overdrive example demonstrating up/down sampling, anti-aliasing filters, and the use of look-up tables and Lagrange interpolation to 
 create a simple preamp model. Up/down sampling by a factor of 2 brings the internal sampling rate to 384 kHz to help manage the 
-alialising of harmonics created from the nonlinear beharvior of the preamp.
+aliasing of harmonics created from the nonlinear behavior of the preamp.
 
 ```C
 #include "flexfx.h"
