@@ -20,8 +20,8 @@ Framework Features
 * Up to 500 MIPs available for signal processing algorithms (FlexFX module with XUF216)
 * Up to 1500 MIPs available for signal processing algorithms (FlexFX module with XEF232)
 * 32/64 bit fixed point DSP support, single-cycle instructions
-* Up to 32x32 channels of USB and I2S audio, up to 384 kHz audio sample rate
-* Single audio cycle DSP processing for all 32 channels (e.g. audio block size = 1).
+* Up to 32x32 (48 kHz) channels of USB and I2S audio, up to 384 kHz audio sample rate at 8x8
+* Single audio cycle DSP processing for all 32 channels (e.g. audio block size = 1)
 * System latency (ADC I2S to DSP to DAC I2S) of 16 audio cycles (16/Fs). 
 * USB interface for USB audio streaming ad USB MIDI for effects control and firmware updating
 * Functions for I2C bus (for peripheral control) and port input/output
