@@ -130,10 +130,13 @@ extern void flash_read ( byte buffer[256] );       // Read next flash page, move
 extern void flash_write( const byte buffer[256] ); // Write next flash page, move to the next page
 extern void flash_close( void );                   // Close the flash device
 
-// Port I/O functions ...
+// Port and pin I/O functions. DAC/ADC port reads/writes will disable I2S/TDM!
 
-extern void port_write( int portnum, bool value ); // Write binary value to port
-extern bool port_read ( int portnum );             // Read binary value from port
+extern void io_write( int pin_num, bool value ); // Write binary value to IO pin
+extern bool io_read ( int pin_num );             // Read binary value from IO pin
+
+extern void port_write( byte value ); // Write 4-bit nibble to DAC port (dac0-dac3 pins)
+extern byte port_read ( void );       // Read 4-bit nibble from ADC port (adc0-adc3 pins)
 
 // I2C functions for peripheral control (do not use these in real-time DSP threads).
 
@@ -146,8 +149,8 @@ extern void i2c_stop ( void );         // Assert an I2C stop condition.
 // FQ converts Q28 fixed-point to floating point
 // QF converts floating-point to Q28 fixed-point
 
-#define FQ(hh) (((hh)<0.0)?((int)((double)(1<<28)*(hh)-0.5)):((int)(((double)(1<<28)-1)*(hh)+0.5)))
-#define QF(xx) (((int)(xx)<0)?((double)(int)(xx))/(1<<28):((double)(xx))/((1<<28)-1))
+#define FQ(hh) (((hh)<0.0)?((int)((double)(1u<<28)*(hh)-0.5)):((int)(((double)(1u<<28)-1)*(hh)+0.5)))
+#define QF(xx) (((int)(xx)<0)?((double)(int)(xx))/(1u<<28):((double)(xx))/((1u<<28)-1))
 
 // MAC performs 32x32 multiply and 64-bit accumulation, SAT saturates a 64-bit result, EXT converts
 // a 64-bit result to a 32-bit value (extract 32 from 64), LD2/ST2 loads/stores two 32-values
@@ -172,34 +175,60 @@ inline int dsp_multiply( int xx, int yy ) // RR = XX * YY
     return ah;
 }
 
-// Lookup tables with 1024 values extended with 2 extra values for 2nd order interpolation.
+// Lookup tables for sine, various sigmoid functions, logarithm, etc. Sigmoid functions have slope
+// of 8 at x=0, a minimum value of 0.0 at x=0, and maximim value approaching 1.0 as x approaches
+// 1.0. Tables indexed by II are NN in length and consist of 32-bit Q28 fixed point values.
+// All table values follow this rule: 0.0 <= xx < 1.0 where ii = int(xx*nn) --> 0.0 <= yy < 1.0.
+// SINE(xx) = 0.5+sin(2pi*xx)/2, ATAN(xx) = c*atan(xx*8), TANH(xx) = tanh(xx*8),
+// NEXP(xx) = 1-e^(-xx*8), RLOG(xx) = -log10(1.0-xx)/8,
 
-extern int dsp_sine_lut[1026]; // y = (sine(1*x))/1, 0 <= x < 1024, one full cycle from 0 to 2*PI
-extern int dsp_atan_lut[1026]; // y = (atan(8*x))/1, 0 <= x < 1024, 0 <= y[1025] <= 0.999999778
-extern int dsp_tanh_lut[1026]; // y = (tanh(8*x))/c, 0 <= x < 1024, 0 <= y[1025] <= 0.999999999
-extern int dsp_nexp_lut[1026]; // y = (1-e^(8*x))/1, 0 <= x < 1024, 0 <= y[1025] <= 0.999667148
+extern int dsp_sine_08[256], dsp_sine_10[1024], dsp_sine_12[4096], dsp_sine_14[16384];
+extern int dsp_atan_08[256], dsp_atan_10[1024], dsp_atan_12[4096], dsp_atan_14[16384];
+extern int dsp_tanh_08[256], dsp_tanh_10[1024], dsp_tanh_12[4096], dsp_tanh_14[16384];
+extern int dsp_nexp_08[256], dsp_nexp_10[1024], dsp_nexp_12[4096], dsp_nexp_14[16384];
+extern int dsp_rlog_08[256], dsp_rlog_10[1024], dsp_rlog_12[4096], dsp_rlog_14[16384];
 
 // Math and filter functions.
 //
-// XX, CC, SS, Yn, and AA are 32-bit fixed point samples/data in Q28 format
+// XX, CC, SS, Yn, MM, and AA are 32-bit fixed point samples/data in Q28 format
 // DD is the distance (0<=DD<1) between the first two points for interpolation
+// KK is a time constant, Q28 format
 // Yn are the data points to be interpolated
 // NN is FIR filter tap-count for 'fir', 'upsample', 'dnsample' and 'convolve' functions
 // NN is IIR filter order or or IIR filter count for cascaded IIR's
+// NN is number of samples in XX for scalar and vector math functions
 // CC is array of 32-bit filter coefficients - length is 'nn' for FIR, nn * 5 for IIR
-// SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 1 for LPF/HPF/INT
-// KK is time constant for LPF, HPF and INT where KK = exp(-2.0 * PI * Fc)
+// SS is array of 32-bit filter state - length is 'nn' for FIR, nn * 4 for IIR, 3 for DCBLOCK
+// RR is the up-sampling/interpolation or down-sampling/decimation ratio
 // AH (high) and AL (low) form the 64-bit signed accumulator
-// WET, DRY, MM are Q28 values.
 
-int dsp_random   ( int gg, int seed );                       // Random number, gg = previous value
-int dsp_blend    ( int xx, int yy, int mm );                 // 0 (100% XX) <= MM <= 1 (100% YY)
-int dsp_interp   ( int dd, int y1, int y2 );                 // Linear interpolation
-int dsp_lagrange ( int dd, int y1, int y2, int y3 );         // Lagrange interpolation
-int dsp_integrate( int xx, int kk, int* ss );                // Leaky integrator
-int dsp_fir_filt ( int xx, const int* cc, int* ss, int nn ); // FIR filter of nn taps
-int dsp_iir_filt ( int xx, const int* cc, int* ss, int nn ); // nn Cascaded bi-quad IIR filters
-int dsp_convolve ( int xx, const int* cc, int* ss, int* ah, unsigned* al ); // 24 tap convolution
+int  dsp_random  ( int  gg, int seed );               // Random number, gg = previous value
+int  dsp_blend   ( int  xx, int yy, int mm );         // 0.0 (100% xx) <= mm <= 1.0 (100% yy)
+int  dsp_interp  ( int  dd, int y1, int y2 );         // 1st order (linear) interpolation
+int  dsp_lagrange( int  dd, int y1, int y2, int y3 ); // 2nd order (Lagrange) interpolation
+
+int  dsp_dcblock ( int  xx, int* ss, int kk ); // DC blocker
+int  dsp_envelope( int  xx, int* ss, int kk ); // Envelope detector,vo=vi*(1–e^(–t/RC)),kk=2*RC/Fs
+
+int  dsp_sum     ( int* xx, int nn );          // sum(xx[0:N-1])
+int  dsp_abs_sum ( int* xx, int nn );          // sum(abs(xx[0:N-1]))
+int  dsp_power   ( int* xx, int nn );          // xx[0:N-1]^2
+int  dsp_sca_sqrt( int  xx );                  // xx ^ 0.5
+void dsp_vec_sqrt( int* xx, int nn );          // xx[0:N-1] = xx[0:N-1] ^ 0.5
+void dsp_abs     ( int* xx, int nn );          // xx[0:N-1] = abs(xx[0:N-1])
+void dsp_square  ( int* xx, int nn );          // xx[0:N-1] = xx[0:N-1]^2
+void dsp_sca_add ( int* xx, int  kk, int nn ); // xx[0:N-1] += kk
+void dsp_sca_mult( int* xx, int  kk, int nn ); // xx[0:N-1] *= kk
+void dsp_vec_add ( int* xx, int* yy, int nn ); // xx[0:N-1] = xx[0:N-1] + yy[0:N-1]
+void dsp_vec_mult( int* xx, int* yy, int nn ); // xx[0:N-1] = xx[0:N-1] * yy[0:N-1]
+
+int  dsp_convolve( int  xx, const int* cc, int* ss, int* ah, int* al ); // 240 tap FIR convolution
+int  dsp_iir     ( int  xx, const int* cc, int* ss, int nn ); // nn Cascaded bi-quad IIR filters
+int  dsp_fir     ( int  xx, const int* cc, int* ss, int nn ); // FIR filter of nn taps
+void dsp_fir_up  ( int* xx, const int* cc, int* ss, int nn, int rr ); // FIR up-sampling/interpolation
+void dsp_fir_dn  ( int* xx, const int* cc, int* ss, int nn, int rr ); // FIR dn-sampling/decimation
+void dsp_cic_up  ( int* xx, const int* cc, int* ss, int nn, int rr ); // CIC up-sampling/interpolation
+void dsp_cic_dn  ( int* xx, const int* cc, int* ss, int nn, int rr ); // CIC dn-sampling/decimation
 
 // Biquad filter coefficient calculation functions (do not use these in real-time DSP threads).
 //
@@ -211,7 +240,7 @@ void make_notch    ( int cc[5], double ff, double qq );
 void make_lowpass  ( int cc[5], double ff, double qq );
 void make_highpass ( int cc[5], double ff, double qq );
 void make_allpass  ( int cc[5], double ff, double qq );
-void make_bandpass ( int cc[5], double ff, double ff2 );
+void make_bandpass ( int cc[5], double ff1, double ff2 );
 void make_peaking  ( int cc[5], double ff, double qq, double gg );
 void make_lowshelf ( int cc[5], double ff, double qq, double gg );
 void make_highshelf( int cc[5], double ff, double qq, double gg );
