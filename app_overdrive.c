@@ -7,7 +7,7 @@ const char* product_name_string    = "Overdrive"; // Your product name
 const int   audio_sample_rate      = 192000;      // Audio sampling frequency
 const int   usb_output_chan_count  = 2;           // 2 USB audio class 2.0 output channels
 const int   usb_input_chan_count   = 2;           // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count      = 2;           // ADC/DAC channels per SDIN/SDOUT wire
+const int   i2s_channel_count      = 2;           // 2,4,or 8 I2S channels per SDIN/SDOUT wire
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
@@ -17,19 +17,16 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     if( usb_prop[0] != 0 || usb_prop[0] != 0 ) return;
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void mixer( const int* usb_output_q31, int* usb_input_q31,
+            const int* i2s_output_q31, int* i2s_input_q31,
+            const int* dsp_output_q31, int* dsp_input_q31, const int* property )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
-    int guitar_in = i2s_output[6] - i2s_output[7];
-
+    int guitar_in_q31 = i2s_output_q31[6] - i2s_output_q31[7];
     // Route instrument input to the USB input and to the DSP input.
-    usb_input[0] = usb_input[1] = guitar_in;
-    dsp_input[0] = dsp_input[1] = guitar_in / 8; // Convert from Q31 to Q28
-
-    // Reduce DSP result to avoid clipping, convert it from Q28 to Q31, send it to the audio DAC.
-    usb_input[1] = i2s_input[6] = i2s_input[7] = 8 * dsp_multiply( dsp_output[0], FQ(+0.8) );
+    usb_input_q31[0] = dsp_input_q31[0] = guitar_in_q31;
+    // Route DSP result to the USB input and the audio DAC.
+    usb_input_q31[1] = i2s_input_q31[6] = i2s_input_q31[7] = dsp_output_q31[0];
 }
 
 // util_fir.py 0.001 0.125 1.0 -100
@@ -50,23 +47,23 @@ int antialias_state1[64], antialias_state2[64], antialias_coeff[64] =
     FQ(-0.000014901),FQ(-0.000005357),FQ(-0.000001205),FQ(-0.000000077)
 };
 
-// util_iir.py highpass 0.0003 0.707 0, util_iir.py peaking 0.001 0.707 +6.0
+// util_iir.py highpass 0.0004 0.707 0, util_iir.py peaking 0.002 0.707 +6.0
 int emphasis1_state[8] = {0,0,0,0,0,0,0,0}, emphasis1_coeff[10] =
 {
-    FQ(+0.998667822),FQ(-1.997335644),FQ(+0.998667822),FQ(+1.997333870),FQ(-0.997337419),
-    FQ(+1.003121053),FQ(-1.993688826),FQ(+0.990607128),FQ(+1.993688826),FQ(-0.993728181),
+    FQ(+0.998224158),FQ(-1.996448315),FQ(+0.998224158),FQ(+1.996445162),FQ(-0.996451468),
+    FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
 };
 // util_iir.py highpass 0.0002 0.707 0, util_iir.py peaking 0.002 0.707 +6.0
 int emphasis2_state[8] = {0,0,0,0,0,0,0,0}, emphasis2_coeff[10] =
 {
-    FQ(+0.999111684),FQ(-1.998223368),FQ(+0.999111684),FQ(+1.998222579),FQ(-0.998224157),
+    FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
     FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
 };
-// util_iir.py highpass 0.0001 0.707 0, util_iir.py lowpass 0.001 0.707 -3.0
+// util_iir.py highpass 0.0001 0.707 0, util_iir.py peaking 0.002 0.707 +6.0
 int emphasis3_state[8] = {0,0,0,0,0,0,0,0}, emphasis3_coeff[10] =
 {
-    FQ(+0.999555743),FQ(-1.999111487),FQ(+0.999555743),FQ(+1.999111289),FQ(-0.999111684),
-    FQ(+0.996194429),FQ(-1.973695761),FQ(+0.977744852),FQ(+1.973695761),FQ(-0.973939281),
+    FQ(+1.003121053),FQ(-1.993688826),FQ(+0.990607128),FQ(+1.993688826),FQ(-0.993728181),
+    FQ(+1.006222470),FQ(-1.987338895),FQ(+0.981273349),FQ(+1.987338895),FQ(-0.987495819),
 };
 
 // util_iir.py lowpass 0.09 0.707 0
@@ -89,26 +86,26 @@ int lowpass3_state[4] = {0,0,0,0}, lowpass3_coeff[5] =
 // Apply gain factor. Lookup the preamp transfer function and interpolate to smooth out the lookup
 // result. Apply slew-rate limiting to the output.
 
-int preamp1[3], preamp2[3], preamp3[3];
+int preamp1[4+3], preamp2[4+3], preamp3[4+3];
 
 int preamp_model( int xx, int gain, int bias, int slewlim, int* state )
 {
-    // Apply gain (total preamp gain = 8 * gain)
-    xx = dsp_multiply( xx, gain );
+    // Add bias to input signal and apply additional gain (total preamp gain = 8 * gain)
+    xx = dsp_multiply( xx + bias, gain );
     // Table lookup
     if( xx >= 0 ) {
         int ii = (xx & 0xFFFFC000) >> 14, ff = (xx & 0x00003FFF) << 14;
-        if( ii > 16383 ) ii = 16383;
+        if( ii > 16381 ) ii = 16381;
         xx = dsp_lagrange( ff, dsp_tanh_14[ii+0], dsp_tanh_14[ii+1], dsp_tanh_14[ii+2] );
     } else {
         int ii = (-xx & 0xFFFFC000) >> 14, ff = (-xx & 0x00003FFF) << 14;
-        if( ii > 16383 ) ii = 16383;
-        xx = -dsp_lagrange( ff, dsp_tanh_14[ii+0], dsp_tanh_14[ii+1], dsp_tanh_14[ii+2] );
+        if( ii > 16381 ) ii = 16381;
+        xx = -dsp_lagrange( ff, dsp_nexp_14[ii+0], dsp_nexp_14[ii+1], dsp_nexp_14[ii+2] );
     }
-    // Slew rate limit
-    if( xx > state[2] + slewlim ) { xx = state[2] + slewlim; state[2] = xx; }
-    if( xx < state[2] - slewlim ) { xx = state[2] - slewlim; state[2] = xx; }
-    return xx;
+    // Slew rate limit and invert
+    if( xx > state[6] + slewlim ) { xx = state[6] + slewlim; state[6] = xx; }
+    if( xx < state[6] - slewlim ) { xx = state[6] - slewlim; state[6] = xx; }
+    return -xx;
 }
 
 void dsp_initialize( void ) // Called once upon boot-up.
@@ -117,49 +114,49 @@ void dsp_initialize( void ) // Called once upon boot-up.
     memset( antialias_state2, 0, sizeof(antialias_state2) );
 }
 
-void dsp_thread1( int* samples, const int* property ) // Upsample
+void dsp_thread1( int* samples_q28, const int* property ) // Upsample
 {
     // Up-sample by 2x by inserting zeros then apply the anti-aliasing filter
-    samples[0] = 4 * dsp_fir_filt( samples[0], antialias_coeff, antialias_state1, 64 );
-    samples[1] = 4 * dsp_fir_filt( 0,          antialias_coeff, antialias_state1, 64 );
+    samples_q28[0] = 4 * dsp_fir( samples_q28[0], antialias_coeff, antialias_state1, 64 );
+    samples_q28[1] = 4 * dsp_fir( 0,              antialias_coeff, antialias_state1, 64 );
 }
 
-void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
+void dsp_thread2( int* samples_q28, const int* property ) // Preamp stage 1
 {
     // Perform stage 1 overdrive on the two up-sampled samples for the left channel.
-    samples[0] = dsp_iir_filt( samples[0], emphasis1_coeff, emphasis1_state, 2 );
-    samples[0] = preamp_model( samples[0], FQ(1.0), FQ(0.0), FQ(0.40), preamp1 );
-    samples[0] = dsp_iir_filt( samples[0], lowpass1_coeff, lowpass1_state, 1 );
-    samples[1] = dsp_iir_filt( samples[1], emphasis1_coeff, emphasis1_state, 2 );
-    samples[1] = preamp_model( samples[1], FQ(1.0), FQ(0.0), FQ(0.40), preamp1 );
-    samples[1] = dsp_iir_filt( samples[1], lowpass1_coeff, lowpass1_state, 1 );
+    samples_q28[0] = dsp_iir     ( samples_q28[0], emphasis1_coeff, emphasis1_state, 2 );
+    samples_q28[0] = preamp_model( samples_q28[0], FQ(1.3), FQ(+0.0), FQ(0.4), preamp1 );
+    samples_q28[0] = dsp_iir     ( samples_q28[0], lowpass1_coeff, lowpass1_state, 1 );
+    samples_q28[1] = dsp_iir     ( samples_q28[1], emphasis1_coeff, emphasis1_state, 2 );
+    samples_q28[1] = preamp_model( samples_q28[1], FQ(1.3), FQ(+0.0), FQ(0.4), preamp1 );
+    samples_q28[1] = dsp_iir     ( samples_q28[1], lowpass1_coeff, lowpass1_state, 1 );
 }
 
-void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
+void dsp_thread3( int* samples_q28, const int* property ) // Preamp stage 2
 {
     // Perform stage 2 overdrive on the two up-sampled samples for the left channel.
-    samples[0] = dsp_iir_filt( samples[0], emphasis2_coeff, emphasis2_state, 2 );
-    samples[0] = preamp_model( samples[0], FQ(1.0), FQ(0.0), FQ(0.20), preamp2 );
-    samples[0] = dsp_iir_filt( samples[0], lowpass2_coeff, lowpass2_state, 1 );
-    samples[1] = dsp_iir_filt( samples[1], emphasis2_coeff, emphasis2_state, 2 );
-    samples[1] = preamp_model( samples[1], FQ(1.0), FQ(0.0), FQ(0.20), preamp2 );
-    samples[1] = dsp_iir_filt( samples[1], lowpass2_coeff, lowpass2_state, 1 );
+    samples_q28[0] = dsp_iir     ( samples_q28[0], emphasis2_coeff, emphasis2_state, 2 );
+    samples_q28[0] = preamp_model( samples_q28[0], FQ(1.0), FQ(+0.0), FQ(0.3), preamp2 );
+    samples_q28[0] = dsp_iir     ( samples_q28[0], lowpass2_coeff, lowpass2_state, 1 );
+    samples_q28[1] = dsp_iir     ( samples_q28[1], emphasis2_coeff, emphasis2_state, 2 );
+    samples_q28[1] = preamp_model( samples_q28[1], FQ(1.0), FQ(+0.0), FQ(0.3), preamp2 );
+    samples_q28[1] = dsp_iir     ( samples_q28[1], lowpass2_coeff, lowpass2_state, 1 );
 }
 
-void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
+void dsp_thread4( int* samples_q28, const int* property ) // Preamp stage 3
 {
     // Perform stage 3 overdrive on the two up-sampled samples for the left channel.
-    samples[0] = dsp_iir_filt( samples[0], emphasis3_coeff, emphasis3_state, 2 );
-    samples[0] = preamp_model( samples[0], FQ(1.0), FQ(0.0), FQ(0.05), preamp3 );
-    samples[0] = dsp_iir_filt( samples[0], lowpass3_coeff, lowpass3_state, 1 );
-    samples[1] = dsp_iir_filt( samples[1], emphasis3_coeff, emphasis3_state, 2 );
-    samples[1] = preamp_model( samples[1], FQ(1.0), FQ(0.0), FQ(0.05), preamp3 );
-    samples[1] = dsp_iir_filt( samples[1], lowpass3_coeff, lowpass3_state, 1 );
+    samples_q28[0] = dsp_iir     ( samples_q28[0], emphasis3_coeff, emphasis3_state, 2 );
+    samples_q28[0] = preamp_model( samples_q28[0], FQ(0.7), FQ(+0.0), FQ(0.2), preamp3 );
+    samples_q28[0] = dsp_iir     ( samples_q28[0], lowpass3_coeff, lowpass3_state, 1 );
+    samples_q28[1] = dsp_iir     ( samples_q28[1], emphasis3_coeff, emphasis3_state, 2 );
+    samples_q28[1] = preamp_model( samples_q28[1], FQ(0.7), FQ(+0.0), FQ(0.2), preamp3 );
+    samples_q28[1] = dsp_iir     ( samples_q28[1], lowpass3_coeff, lowpass3_state, 1 );
 }
 
-void dsp_thread5( int* samples, const int* property ) // Downsample
+void dsp_thread5( int* samples_q28, const int* property ) // Downsample
 {
     // Down-sample by 2x by band-limiting via anti-aliasing filter and then discarding 1 sample.
-    samples[0] = dsp_fir_filt( samples[0], antialias_coeff, antialias_state2, 64 );
-                 dsp_fir_filt( samples[1], antialias_coeff, antialias_state2, 64 );
+    samples_q28[0] = dsp_fir( samples_q28[0], antialias_coeff, antialias_state2, 64 );
+                     dsp_fir( samples_q28[1], antialias_coeff, antialias_state2, 64 );
 }

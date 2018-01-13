@@ -40,17 +40,17 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     }
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void mixer( const int* usb_output_q31, int* usb_input_q31,
+            const int* i2s_output_q31, int* i2s_input_q31,
+            const int* dsp_output_q31, int* dsp_input_q31, const int* property )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     // Route the guitar signal to the USB input and to the DSP input.
-    usb_input[0] = usb_input[1] = i2s_output[6] - i2s_output[7];
-    dsp_input[0] = dsp_input[1] = i2s_output[6] - i2s_output[7];
+    usb_input_q31[0] = i2s_output_q31[6] - i2s_output_q31[7];
+    dsp_input_q31[0] = i2s_output_q31[6] - i2s_output_q31[7];
     // Send DSP output to the audio DAC.
-    i2s_input[6] = dsp_output[0];
-    i2s_input[7] = dsp_output[1];
+    i2s_input_q31[6] = dsp_output_q31[0];
+    i2s_input_q31[7] = dsp_output_q31[1];
 }
 
 int ir_coeff[2400], ir_state[2400]; // DSP data *must* be non-static global!
@@ -62,7 +62,7 @@ void dsp_initialize( void ) // Called once upon boot-up.
     ir_coeff[0] = ir_coeff[1200] = FQ(+1.0);
 }
 
-void dsp_thread1( int* samples, const int* property )
+void dsp_thread1( int* samples_q28, const int* property )
 {
     static int offset = 0;
     if( property[0] == PROP_EXAMPLE_IR_BEG ) offset = 0;
@@ -73,44 +73,46 @@ void dsp_thread1( int* samples, const int* property )
         ir_coeff[offset+2] = property[3] / 32; ir_coeff[offset+3] = property[4] / 32;
         ir_coeff[offset+4] = property[5] / 32; offset += 5;
     }
-    samples[2] = 0; samples[3] = 1 << 31; // Initial 64-bit Q1.63 accumulator value
-    samples[4] = 0; samples[5] = 1 << 31; // Initial 64-bit Q1.63 accumulator value
+    samples_q28[2] = 0; samples_q28[3] = 1 << 31; // Initial 64-bit Q1.63 accumulator value
+    samples_q28[4] = 0; samples_q28[5] = 1 << 31; // Initial 64-bit Q1.63 accumulator value
     // Perform 240-sample convolution (1st 240 of 1220 total) of sample with IR data
-    samples[0] = dsp_convolve( samples[0], ir_coeff+240*0, ir_state+240*0, samples+2, samples+3 );
-    samples[1] = dsp_convolve( samples[1], ir_coeff+240*5, ir_state+240*5, samples+4, samples+5 );
+    samples_q28[0] = dsp_convolve( samples_q28[0], ir_coeff+240*0, ir_state+240*0, samples_q28+2,samples_q28+3 );
+    samples_q28[1] = dsp_convolve( samples_q28[1], ir_coeff+240*5, ir_state+240*5, samples_q28+4,samples_q28+5 );
 }
 
-void dsp_thread2( int* samples, const int* property )
+void dsp_thread2( int* samples_q28, const int* property )
 {
     // Perform 240-sample convolution (2nd 240 of 1220 total) of sample with IR data
-    samples[0] = dsp_convolve( samples[0], ir_coeff+240*1, ir_state+240*1, samples+2, samples+3 );
-    samples[1] = dsp_convolve( samples[1], ir_coeff+240*6, ir_state+240*6, samples+4, samples+5 );
+    samples_q28[0] = dsp_convolve( samples_q28[0], ir_coeff+240*1, ir_state+240*1, samples+2,samples_q28+3 );
+    samples_q28[1] = dsp_convolve( samples_q28[1], ir_coeff+240*6, ir_state+240*6, samples+4,samples_q28+5 );
 }
 
-void dsp_thread3( int* samples, const int* property )
+void dsp_thread3( int* samples_q28, const int* property )
 {
     // Perform 240-sample convolution (3rd 240 of 1220 total) of sample with IR data
-    samples[0] = dsp_convolve( samples[0], ir_coeff+240*2, ir_state+240*2, samples+2, samples+3 );
-    samples[1] = dsp_convolve( samples[1], ir_coeff+240*7, ir_state+240*7, samples+4, samples+5 );
+    samples_q28[0] = dsp_convolve( samples_q28[0], ir_coeff+240*2, ir_state+240*2, samples_q28+2,samples_q28+3 );
+    samples_q28[1] = dsp_convolve( samples_q28[1], ir_coeff+240*7, ir_state+240*7, samples_q28+4,samples_q28+5 );
 }
 
-void dsp_thread4( int* samples, const int* property )
+void dsp_thread4( int* samples_q28, const int* property )
 {
     // Perform 240-sample convolution (4th 240 of 1220 total) of sample with IR data
-    samples[0] = dsp_convolve( samples[0], ir_coeff+240*3, ir_state+240*3, samples+2, samples+3 );
-    samples[1] = dsp_convolve( samples[1], ir_coeff+240*8, ir_state+240*8, samples+4, samples+5 );
+    samples_q28[0] = dsp_convolve( samples_q28[0], ir_coeff+240*3, ir_state+240*3, samples_q28+2,samples_q28+3 );
+    samples_q28[1] = dsp_convolve( samples_q28[1], ir_coeff+240*8, ir_state+240*8, samples_q28+4,samples_q28+5 );
 }
 
-void dsp_thread5( int* samples, const int* property )
+void dsp_thread5( int* samples_q28, const int* property )
 {
     static bool muted = 0;
     // Check IR property -- Mute at start of new IR loading, un-mute when done.
     if( property[0] == PROP_EXAMPLE_IR_BEG ) muted = 1;
     if( property[0] == PROP_EXAMPLE_IR_END ) muted = 0;
     // Perform 240-sample convolution (5th and last 240 of 1220 total) of sample with IR data
-    samples[0] = dsp_convolve( samples[0], ir_coeff+240*4, ir_state+240*4, samples+2, samples+3 );
-    samples[1] = dsp_convolve( samples[1], ir_coeff+240*9, ir_state+240*9, samples+4, samples+5 );
+    samples_q28[0] = dsp_convolve( samples_q28[0], ir_coeff+240*4, ir_state+240*4, samples_q28+2,samples_q28+3 );
+    samples_q28[1] = dsp_convolve( samples_q28[1], ir_coeff+240*9, ir_state+240*9, samples_q28+4,samples_q28+5 );
     // Extract 32-bit Q28 from 64-bit Q63 and then apply mute/un-mute based on IR loading activity.
-    DSP_EXT( samples[0], samples[2], samples[3] ); samples[0] = muted ? 0 : samples[0];
-    DSP_EXT( samples[1], samples[4], samples[5] ); samples[1] = muted ? 0 : samples[1];
+    DSP_EXT( samples_q28[0], samples_q28[2], samples_q28[3] );
+    DSP_EXT( samples_q28[1], samples_q28[4], samples_q28[5] );
+    samples_q28[0] = muted ? 0 : samples_q28[0];
+    samples_q28[1] = muted ? 0 : samples_q28[1];
 }

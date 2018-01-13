@@ -38,6 +38,7 @@ void mixer( const int* usb_output, int* usb_input,
             const int* i2s_output, int* i2s_input,
             const int* dsp_output, int* dsp_input, const int* property )
 {
+    usb_input[0]=usb_input[1] = i2s_output[6]-i2s_output[7]; // Send pseudo-diff ADC sample to USB.
 }
 
 // Audio Processing Threads. These functions run on tile 1 and are called once for each audio sample
@@ -55,7 +56,6 @@ void dsp_initialize( void ) // Called once upon boot-up.
 // Process samples (from the mixer function) and properties. Send results to stage 2.
 void dsp_thread1( int* samples, const int* property )
 {
-    samples[0] = dsp_iir_filt( samples[0], lowpass_coeff, lowpass_state1, 1 );
 }
 
 // Process samples (from stage 1) and properties. Send results to stage 3.

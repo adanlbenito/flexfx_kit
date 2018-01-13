@@ -46,35 +46,35 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
         state = 1;
         double gain = (bass - 0.5) * 12.0; // 0.0 < bass < 1.0 --> -12.0dB < gain < +12dB.
         dsp_prop[0] = PROP_EXAMPLE_BASS; // Compute coefficients and populate property.
-        make_lowshelf( dsp_prop+1, 100.0, 0.707, gain ); // Bass corner freq = 100 Hz.
+        calc_lowshelf( dsp_prop+1, 100.0, 0.707, gain ); // Bass corner freq = 100 Hz.
     }
     // Compute middle coefficients and send them to DSP threads.
     else if( state == 1 ) { // State 3 is for generating and sending the tone coeffs property.
         state = 2;
         double gain = (middle - 0.5) * 12.0; // 0.0 < middle < 1.0 --> -12.0dB < gain < +12dB.
         dsp_prop[0] = PROP_EXAMPLE_MIDDLE; // Compute coefficients and populate property.
-        make_peaking( dsp_prop+1, 1000.0, 1.200, gain ); // Middle peaking freq = 10000 Hz.
+        calc_peaking( dsp_prop+1, 1000.0, 1.200, gain ); // Middle peaking freq = 10000 Hz.
     }
     // Compute treble coefficients and send them to DSP threads.
     else if( state == 2 ) { // State 3 is for generating and sending the tone coeffs property.
         state = 3;
         double gain = (treble - 0.5) * 12.0; // 0.0 < treble < 1.0 --> -12.0dB < gain < +12dB.
         dsp_prop[0] = PROP_EXAMPLE_TREBLE; // Compute coefficients and populate property.
-        make_highshelf( dsp_prop+1, 10000.0, 0.707, gain ); // Treble corner freq = 10000 Hz.
+        calc_highshelf( dsp_prop+1, 10000.0, 0.707, gain ); // Treble corner freq = 10000 Hz.
     }
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void mixer( const int* usb_output_q31, int* usb_input_q31,
+            const int* i2s_output_q31, int* i2s_input_q31,
+            const int* dsp_output_q31, int* dsp_input_q31, const int* property )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     // Route the guitar signal to the USB input and to the DSP input.
-    usb_input[0] = usb_input[1] = i2s_output[6] - i2s_output[7];
-    dsp_input[0] = dsp_input[1] = i2s_output[6] - i2s_output[7];
+    usb_input_q31[0] = i2s_output_q31[6] - i2s_output_q31[7];
+    dsp_input_q31[0] = i2s_output_q31[6] - i2s_output_q31[7];
     // Send DSP output to the audio DAC.
-    i2s_input[6] = dsp_output[0];
-    i2s_input[7] = dsp_output[1];
+    i2s_input_q31[6] = dsp_output_q31[0];
+    i2s_input_q31[7] = dsp_output_q31[1];
 }
 
 int coeff_actual[3*5], coeff_target[3*5], tone_stateL[3*4], tone_stateR[3*4];
@@ -87,7 +87,7 @@ void dsp_initialize( void ) // Called once upon boot-up.
     memset( tone_stateR,  0, sizeof(tone_stateR) );
 }
 
-void dsp_thread1( int* samples, const int* property )
+void dsp_thread1( int* samples_q28, const int* property )
 {
     // Check for bass, middle or treble property data to update tone filter with.
     if( property[0] == PROP_EXAMPLE_BASS )   memcpy( coeff_target+5*0, property+1, 20 );
@@ -107,22 +107,22 @@ void dsp_thread1( int* samples, const int* property )
         if( coeff_actual[5*2+ii] > coeff_target[5*2+ii] ) coeff_actual[5*2+ii] -= FQ(+0.0001);
     }
     // Apply tone control to left/right audio channels.
-    samples[0] = dsp_iir_filt( samples[0], coeff_actual, tone_stateL, 3 ); // 3 cascaded Biquads
-    samples[1] = dsp_iir_filt( samples[1], coeff_actual, tone_stateR, 3 ); // 3 cascaded Biquads
+    samples_q28[0] = dsp_iir( samples_q28[0], coeff_actual, tone_stateL, 3 ); // 3 cascaded Biquads
+    samples_q28[1] = dsp_iir( samples_q28[1], coeff_actual, tone_stateR, 3 ); // 3 cascaded Biquads
 }
 
-void dsp_thread2( int* samples, const int* property )
+void dsp_thread2( int* samples_q28, const int* property )
 {
 }
 
-void dsp_thread3( int* samples, const int* property )
+void dsp_thread3( int* samples_q28, const int* property )
 {
 }
 
-void dsp_thread4( int* samples, const int* property )
+void dsp_thread4( int* samples_q28, const int* property )
 {
 }
 
-void dsp_thread5( int* samples, const int* property )
+void dsp_thread5( int* samples_q28, const int* property )
 {
 }
