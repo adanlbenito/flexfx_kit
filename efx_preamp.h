@@ -1,3 +1,4 @@
+// =================================================================================================
 // Three-stage tube preamp. Each stage implements a triode preamp model. The three stages are
 // followed by a grapic EQ. Preamp and tone parameters range from 1 (lowest frequency, minimum
 // level, etc) to 9 (highest frequency, maximum level, etc) with 5 being the middle or neutral
@@ -11,7 +12,7 @@
 // model with slew-rate limiting and adjustable bias, and post-filtering, all creating a simple
 // 12AX7-based guitar preamp stage. The graphic EQ is at the end of the three-stage-preamp chain and
 // is used as the final tone-shaping component (a.k.a the preamp's the tone stack).
-
+//
 // Preamp parameter names and values for preamp stages 1, 2 and 3 are below. The values of these
 // parameters for each stage are controlled via FlexFx properties with the property's five 32-bit
 // values set to parameters for each preamp stage.
@@ -84,7 +85,8 @@
 // -------------------------------------------------------------------------------------------------
 //
 // PROP_PREAMP_OUTPUT[1]    Volume Left    Left channel output volume 0.0 (min) to 0.999 (max).
-// PROP_PREAMP_OUTPUT[1]    Volume Right   Right channel output volume 0.0 (min) to 0.999 (max).
+// PROP_PREAMP_OUTPUT[2]    Volume Right   Right channel output volume 0.0 (min) to 0.999 (max).
+// =================================================================================================
 
 #define PROP_PREAMP_OUTPUT   0x33010001 // Out Volume L, Out Volume R, 0, 0, 0
 #define PROP_PREAMP_EMPHASIS 0x33010002 // Mid-emphasis, index into filter table for each amp stage
