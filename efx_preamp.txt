@@ -1,0 +1,29 @@
+// When using the "flexfx.py" to load properties to a target board via USB/MIDI use the following
+// text file configuration format. The script will detect the parameter names, apply the matching
+// property ID's and fill in property values appropriately. Note that the # symbol is used in these
+// configuration scripts to signify a text comment.
+//
+// # Three-stage tube preamp. Each stage implements a triode preamp model. The
+// # three stages are followed by a grapic EQ. Preamp and tone parameters range
+// # from 1 (lowest frequency, minimum level, etc) to 9 (highest frequency,
+// # maximum level, etc) with 5 being the middle or neutral value.
+//
+// # Preamp parameter names and values for preamp stages 1, 2 and 3 ...
+//
+// preamp_lowcut     5 5 5  # Bass cutoff freq for each stage's input
+// preamp_emphasis   5 5 5  # Midrange boost frequency for each stage
+// preamp_drive      5 5 5  # Drive level for each stage's input
+// preamp_bias       5 5 5  # Tube bias for each stage's tube model
+// preamp_shift      5 5 5  # Tube bias shift amount for each stage's tube model
+// preamp_slewlimit  5 5 5  # Slew-rate limit for each stage's tube model
+// preamp_highcut    5 5 5  # Treble attenuation for each stage's output
+//
+// # Tone control parameter names and levels for each EQ band ...
+//
+// tone_levels_123   5 5 5  # EQ levels for 60 Hz, 120 Hz, 240 Hz
+// tone_levels_456   5 5 5  # EQ levels for 480 Hz, 960 kHz, 1.92 kHz
+// tone_levels_789   5 5 5  # EQ levels for 3.84 kHz, 7.68 kHz, 15.36 kHz
+//
+// # Output volume control ...
+// output_volume     0.999 0.999 # Left and right output volume (0.0 min to 0.999 max)
+
