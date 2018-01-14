@@ -3,7 +3,7 @@
 #include "efx_preamp.h"
 
 const char* company_name_string    = "FlexFX";  // Your company name
-const char* product_name_string    = "Example"; // Your product name
+const char* product_name_string    = "Preamp";  // Your product name
 const int   target_hardware        = 0;         // 0 for FlexFX Digital/ComboA, 1 for FlexFX ComboB
 const int   audio_sample_rate      = 192000;    // Default sample rate at boot-up
 const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
