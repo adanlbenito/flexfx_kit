@@ -1,5 +1,5 @@
 // Three-stage tube preamp. Each stage implements a triode preamp model. The three stages are
-// followed by a grapic EQ. Preamp and tone parameters range from 1 (lowest frequency, minimum
+// followed by a graphic EQ. Preamp and tone parameters range from 1 (lowest frequency, minimum
 // level, etc) to 9 (highest frequency, maximum level, etc) with 5 being the middle or neutral
 // value.
 //
@@ -76,9 +76,9 @@
 // PROP_PREAMP_EQ_456[1]    EQ Band 4      Output level for 480 Hz. Range is 1 (-12dB) to 9 (+12dB).
 // PROP_PREAMP_EQ_456[2]    EQ Band 5      Output level for 960 Hz. Range is 1 (-12dB) to 9 (+12dB).
 // PROP_PREAMP_EQ_456[3]    EQ Band 6      Output level for 1.92 kHz. Range is 1(-12dB) to 9(+12dB).
-// PROP_PREAMP_EQ_789[1]    EQ Band 6      Output level for 3.84 kHz. Range is 1(-12dB) to 9(+12dB).
-// PROP_PREAMP_EQ_789[2]    EQ Band 6      Output level for 7.68 kHz. Range is 1(-12dB) to 9(+12dB).
-// PROP_PREAMP_EQ_789[3]    EQ Band 6      Output level for 15.4 kHz. Range is 1(-12dB) to 9(+12dB).
+// PROP_PREAMP_EQ_789[1]    EQ Band 7      Output level for 3.84 kHz. Range is 1(-12dB) to 9(+12dB).
+// PROP_PREAMP_EQ_789[2]    EQ Band 8      Output level for 7.68 kHz. Range is 1(-12dB) to 9(+12dB).
+// PROP_PREAMP_EQ_789[3]    EQ Band 9      Output level for 15.4 kHz. Range is 1(-12dB) to 9(+12dB).
 //
 // Property                 Parameter      Description
 // -------------------------------------------------------------------------------------------------
