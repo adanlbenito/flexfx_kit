@@ -61,6 +61,10 @@ inline int dsp_multiply( int xx, int yy ) // RR = XX * YY
     return ah;
 }
 
+extern int dsp_sine_10[ 1024], dsp_atan_10[ 1024], dsp_tanh_10[ 1024], dsp_nexp_10[ 1024];
+extern int dsp_sine_12[ 4096], dsp_atan_12[ 4096], dsp_tanh_12[ 4096], dsp_nexp_12[ 4096];
+extern int dsp_sine_14[16384], dsp_atan_14[16384], dsp_tanh_14[16384], dsp_nexp_14[16384];
+
 // Math and filter functions.
 //
 // XX, CC, SS, Yn, MM, and AA are 32-bit fixed point samples/data in QQQ format

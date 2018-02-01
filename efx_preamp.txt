@@ -1,29 +1,62 @@
-// When using the "flexfx.py" to load properties to a target board via USB/MIDI use the following
-// text file configuration format. The script will detect the parameter names, apply the matching
-// property ID's and fill in property values appropriately. Note that the # symbol is used in these
-// configuration scripts to signify a text comment.
-//
-// # Three-stage tube preamp. Each stage implements a triode preamp model. The
-// # three stages are followed by a grapic EQ. Preamp and tone parameters range
-// # from 1 (lowest frequency, minimum level, etc) to 9 (highest frequency,
-// # maximum level, etc) with 5 being the middle or neutral value.
-//
-// # Preamp parameter names and values for preamp stages 1, 2 and 3 ...
-//
-// preamp_lowcut     5 5 5  # Bass cutoff freq for each stage's input
-// preamp_emphasis   5 5 5  # Midrange boost frequency for each stage
-// preamp_drive      5 5 5  # Drive level for each stage's input
-// preamp_bias       5 5 5  # Tube bias for each stage's tube model
-// preamp_shift      5 5 5  # Tube bias shift amount for each stage's tube model
-// preamp_slewlimit  5 5 5  # Slew-rate limit for each stage's tube model
-// preamp_highcut    5 5 5  # Treble attenuation for each stage's output
-//
-// # Tone control parameter names and levels for each EQ band ...
-//
-// tone_levels_123   5 5 5  # EQ levels for 60 Hz, 120 Hz, 240 Hz
-// tone_levels_456   5 5 5  # EQ levels for 480 Hz, 960 kHz, 1.92 kHz
-// tone_levels_789   5 5 5  # EQ levels for 3.84 kHz, 7.68 kHz, 15.36 kHz
-//
-// # Output volume control ...
-// output_volume     0.999 0.999 # Left and right output volume (0.0 min to 0.999 max)
-
+# FLEXFX DIGITAL PREAMP (3302)
+#
+# Three-stage tube preamp. Each stage implements a triode preamp model. The
+# three stages are followed by a grapic EQ. Preamp and tone parameters range
+# from 1 (lowest frequency, minimum level, etc) to 9 (highest frequency,
+# maximum level, etc) with 5 being the middle or neutral value.
+#
+# PROPERTIES SUMMARY
+#
+# PROPERTY   DIRECTION        DESCRIPTION
+# 33020000   Host to Device   List all control (knobs,buttons) and preset data
+# 33020001   Birdirectional   Control levels to write or current control levels
+# 33020n01   Birdirectional   Up to 20 charactr name for preset N (zero padded)
+# 33020102   Birdirectional   Preset N data to write or current preset N data
+#
+# PROPERTY LAYOUT for control (knobs, pushbuttons, etc) Values shown are 32-bit
+# values represented in ASCII/HEX format or as floating point values ranging
+# from +0.0 up to (not including) +1.0.
+#
+# +------- Effect identifier (3302 for Digital Preamp v1)
+# |
+# |        +-------------------------------- Volume level
+# |        |     +-------------------------- Tone setting
+# |        |     |     +-------------------- Reserved
+# |        |     |     |     +-------------- Reserved
+# |        |     |     |     |     +-------- Preset selection (1 through 9)
+# |        |     |     |     |     |+------- Enabled (1=yes,0=bypassed)
+# |        |     |     |     |     ||+------ InputL  (1=plugged,0=unplugged)
+# |        |     |     |     |     |||+----- OutputL (1=plugged,0=unplugged)
+# |        |     |     |     |     ||||+---- InputR  (1=plugged,0=unplugged)
+# |        |     |     |     |     |||||+--- OutputR (1=plugged,0=unplugged)
+# |        |     |     |     |     ||||||+-- Expression (1=plugged,0=unplugged)
+# |        |     |     |     |     |||||||+- USB Audio (1=active)
+# |        |     |     |     |     ||||||||
+# 33020001 0.500 0.500 0.500 0.500 91111111
+#
+# PROPERTY LAYOUT for preset data. Values shown are 32-bit values represented
+# in ASCII/HEX format.
+#
+# +------- Effect identifier (3302 for Digital Preamp v1)
+# |
+# |    +-- Preset number (1 through 9)
+# |    |
+# |    |   Preamp Stage 1
+# |    |   +-------- Lowcut frequency for amp input (1=lowest,9=highest)
+# |    |   |+------- Midrange boost frequency for amp (1=lowest,9=highest)
+# |    |   ||+------ Drive level for each amp's input (1=minimum,9=maximum)
+# |    |   |||+----- Tube bias for amp tube model (1=cold,5=neutral,9=hot)
+# |    |   ||||+---- Tube bias shift amount for amp tube model (1=min,9=max)
+# |    |   |||||+--- Slew-rate limit for amp tube model (1=max,9=min)
+# |    |   ||||||+-- Highcut frequency for amp output (1=lowest,9=highest)
+# |    |   |||||||
+# |    |   |||||||  Preamp Stage 2 (same parameters as stage 1)
+# |    |   |||||||  |||||||
+# |    |   |||||||  |||||||  Preamp Stage 3 (same parameters as stage 1)
+# |    |   |||||||  |||||||  |||||||
+# |    |   |||||||  |||||||  |||||||  Output EQ (1=-12dB, 5=0dB, 9=+12dB)
+# |    |   |||||||  |||||||  |||||||  +++--------- EQ bands 60Hz,120Hz,240Hz
+# |    |   |||||||  |||||||  |||||||  |||+++------ EQ bands 480Hz,960Hz,1k92
+# |    |   |||||||  |||||||  |||||||  ||||||++-+-- EQ bands 3k84,7k68,15k36
+# |    |   |||||||  |||||||  |||||||  |||||||| |
+# 33020n02 55555550 55555550 55555550 55555555 50000000

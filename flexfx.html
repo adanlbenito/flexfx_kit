@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>FlexFX Controller</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="flexfx.css">
+</head>
+
+<body ><div class="container">
+  <script>var $ = function( id ) { return document.getElementById( id ); };</script>
+  <div id="flexfx_factory"></div>
+  <div id="flexfx_example"></div>
+  <div id="flexfx_preamp"></div>
+  <div id="flexfx_cabsim"></div>
+</div></body>
+
+<script>
+
+var midi_access, midi_inputs, midi_outputs, output_ports = {};
+var midi_input_names = [], midi_output_names = [];
+var flexfx_property = 0;
+
+window.addEventListener('load', function()
+{
+    _load_controller( "flexfx_factory" );
+    _load_controller( "flexfx_example" );
+    _load_controller( "flexfx_cabsim" );
+    _load_controller( "flexfx_preamp" );
+
+    if(navigator.requestMIDIAccess)
+    {
+        navigator.requestMIDIAccess({sysex:true}).then(_on_midi_success,_on_midi_failure);
+    }
+    else document.write( "This browser does not support MIDI access." );
+});
+
+function _load_controller( effect_name, instance_num, midi_port )
+{
+    var script = document.createElement( 'link' );
+    script.rel = "stylesheet";
+    script.type = "text/css";
+    script.href = effect_name + ".css";
+    document.getElementsByTagName("head")[0].appendChild(script);
+
+    var script = document.createElement( 'script' );
+    script.type = "text/javascript";
+    script.src = effect_name + ".js";
+    script.async = false;
+    script.onload = function(e)
+    {
+        $(effect_name).innerHTML = eval( effect_name+"__create("+instance_num+");" );
+        eval( effect_name+"__initialize("+instance_num+","+midi_port+");" );
+    };
+    document.getElementsByTagName("head")[0].appendChild(script);
+}
+
+function _on_midi_success( midiAccess )
+{
+    midi_access  = midiAccess;
+    midi_inputs  = midi_access.inputs.values();
+    midi_outputs = midi_access.outputs.values();
+
+    for( var port = midi_inputs.next(); !port.done; port = midi_inputs.next() )
+    {
+        port.value.onmidimessage = _on_midi_message;
+    }
+    for( var port = midi_outputs.next(); !port.done; port = midi_outputs.next())
+    {
+        output_ports[port.value.id] = port.value;
+        //midi_input_port.send( property_to_midi_sysex( [11,22,33,44,55,66] ));
+    }
+}
+
+function _on_midi_failure( error ) { document.write( "MIDI access denied." ); }
+
+function _on_midi_message( event )
+{
+    property = midi_sysex_to_property( event.data );
+    console.log( "Property=[" + property[0] + "," + property[1] + "," + property[2] + "," +
+                 property[2] + "," + property[4] + "," + property[5] + "]" );
+    flexfx_property = property;
+}
+
+function flexfx_property_to_midi( property )
+{
+    midi_data = [0xF0];
+    for( ii = 0; ii < 6; ++ii )
+    {
+        midi_data.push( (property[ii]>>28)&15 ); midi_data.push( (property[ii]>>24)&15 );
+        midi_data.push( (property[ii]>>20)&15 ); midi_data.push( (property[ii]>>16)&15 );
+        midi_data.push( (property[ii]>>12)&15 ); midi_data.push( (property[ii]>> 8)&15 );
+        midi_data.push( (property[ii]>> 4)&15 ); midi_data.push( (property[ii]>> 0)&15 );
+    }
+    midi_data.push( 0xF7 );
+    return midi_data;
+}
+
+function flexfx_midi_to_prop( midi_data )
+{
+    property = [0,0,0,0,0,0];
+    for( ii = 0; ii < 6; ++ii )
+    {
+        property[ii] = (midi_data[8*ii+1]<<28) + (midi_data[8*ii+2]<<24)
+                     + (midi_data[8*ii+3]<<20) + (midi_data[8*ii+4]<<16)
+                     + (midi_data[8*ii+5]<<12) + (midi_data[8*ii+6]<< 8)
+                     + (midi_data[8*ii+7]<< 4) + (midi_data[8*ii+8]<< 0);
+    }
+    return property;
+}
+
+function array_to_ui1  (a) { return a[0]; a=a.slice(1); }
+function array_to_ui2be(a) { return a[1]+256*a[0]; a=a.slice(2); }
+function array_to_ui2le(a) { return a[0]+256*a[1]; a=a.slice(2); }
+function array_to_ui4be(a) { return a[3]+256*a[2]+65536*a[1]+16777216*a[0]; a=a.slice(4); }
+function array_to_ui4le(a) { return a[0]+256*a[1]+65536*a[2]+16777216*a[3]; a=a.slice(4); }
+
+var _firmware_data, _midi_port, _load_count;
+
+function _flexfx_load_firmware_begin()
+{
+    midi_port.send( flexfx_property_to_midi( [1,0,0,0,0,0] ));
+   setInterval( _flexfx_load_firmware_next, 130 );
+}
+
+function _flexfx_load_firmware_next()
+{
+    if( _firmware_data.length > 0 )
+    {
+        property = [2,0,0,0,0,0];
+        property[1] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
+        property[2] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
+        property[3] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
+        property[4] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
+        property[5] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
+        midi_port.send( flexfx_property_to_midi( property ));
+        if( (++_load_count % 16) == 0 ) setInterval( _flexfx_load_firmware_next, 13 );
+        else setInterval( _flexfx_load_firmware_next, 1 );
+    }
+    else setInterval( _flexfx_load_firmware_end, 13 );
+}
+
+function _flexfx_load_firmware_end()
+{
+    midi_port.send( flexfx_property_to_midi( [3,0,0,0,0,0] ));
+}
+
+function flexfx_load_firmware( midi_port, file_object, status_handler )
+{
+    var reader = new FileReader();
+    reader.onload = function(e)
+    {
+        _firmware_data = new Uint8Array( reader.result );
+        setInterval( _flexfx_load_firmware_begin, 6000 );
+        //port = output_ports["Example"];
+    }
+    _load_count = 0;
+    _midi_port = midi_port;
+    reader.readAsArrayBuffer( file_object );
+}
+
+</script>
+</html>
