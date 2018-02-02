@@ -14,15 +14,16 @@ function flexfx_cabsim__create( instance_number )
     x += "</div></div>";
     x += "<table class='flexfx'>";
     x += "<thead>";
-    x += "<tr><th>Left/Mono</th><th>Right/Stereo</th><th>File Name(s)</th></tr>";
+    x += "<tr><th>Preset</th><th>Left/Mono</th><th>Right/Stereo</th><th>File Name(s)</th></tr>";
     x += "</thead>";
     x += "<tbody>";
-    for( p = 1; p <= 9; ++p ) { x += " <tr>";
-    x += "<td><input type='file' style='display:none' id='flexfx_cabsimI1"+p+"L'/><button id='flexfx_cabsimB1"+p+"L'>Preset "+p+" (L)</button></td>";
-    x += "<td><input type='file' style='display:none' id='flexfx_cabsimI1"+p+"R'/><button id='flexfx_cabsimB1"+p+"R'>Preset "+p+" (R)</button></td>";
+    for( p = 1; p <= 9; ++p ) {
+    x += "<tr><td class='preset' id='cabsimP"+p+"'>"+p+"</td>";
+    x += "<td><input type='file' style='display:none' id='flexfx_cabsimI1"+p+"L'/><button id='flexfx_cabsimB1"+p+"L'>Select IR</button></td>";
+    x += "<td><input type='file' style='display:none' id='flexfx_cabsimI1"+p+"R'/><button id='flexfx_cabsimB1"+p+"R'>Select IR</button></td>";
     x += "<td><div style='display:inline-block'>";
-    x += "<div id='flexfx_cabsimT1"+p+"L'>G12H Ann 152 O Hi-Gn All+Room Stereo Celestion.wav</div>";
-    x += "<div id='flexfx_cabsimT1"+p+"R'>G12H Ann 152 O Hi-Gn All+Room Stereo Celestion.wav</div>";
+    x += "<div id='flexfx_cabsimT1"+p+"L'>Celestion G12H Ann 152 Open Room.wav</div>";
+    x += "<div id='flexfx_cabsimT1"+p+"R'>Celestion G12H Ann 152 Open Room.wav</div>";
     x += "</div></td>"; x += "</tr>"; }
     x += "</tbody></table>";
     return x;
@@ -31,10 +32,27 @@ function flexfx_cabsim__create( instance_number )
 function flexfx_cabsim__initialize( instance_number, midi_port )
 {
     n = instance_number;
-    for( i = 1; i <= 9; ++i ) $("flexfx_cabsimB1"+i+"L").onclick  = _flexfx_cabsim__on_button;
-    for( i = 1; i <= 9; ++i ) $("flexfx_cabsimB1"+i+"R").onclick  = _flexfx_cabsim__on_button;
-    for( i = 1; i <= 9; ++i ) $("flexfx_cabsimI1"+i+"L").onchange = _flexfx_cabsim__on_input;
-    for( i = 1; i <= 9; ++i ) $("flexfx_cabsimI1"+i+"R").onchange = _flexfx_cabsim__on_input;
+    for( i = 1; i <= 9; ++i )
+    {
+        $("cabsimP"+i).onclick = on_cabsim_select;
+
+        $("flexfx_cabsimB1"+i+"L").onclick  = _flexfx_cabsim__on_button;
+        $("flexfx_cabsimB1"+i+"R").onclick  = _flexfx_cabsim__on_button;
+        $("flexfx_cabsimI1"+i+"L").onchange = _flexfx_cabsim__on_input;
+        $("flexfx_cabsimI1"+i+"R").onchange = _flexfx_cabsim__on_input;
+    }
+}
+
+function on_cabsim_select( event )
+{
+    if( event.target.innerHTML[0] == '[' ) preset = parseInt( event.target.innerHTML[1] );
+    else preset = parseInt( event.target.innerHTML );
+
+    parent = $("cabsimP"+preset).parentNode.parentNode;
+    for( i = 1; i <= 9; ++i ) parent.children[i-1].children[0].innerHTML = i;
+    parent.children[preset-1].children[0].innerHTML = "[" + preset + "]";
+
+    //port.send( flexfx_property_to_midi( property ));
 }
 
 function _flexfx_cabsim__on_input( event )

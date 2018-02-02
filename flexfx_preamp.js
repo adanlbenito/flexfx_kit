@@ -25,7 +25,7 @@ function flexfx_preamp__create( n )
     x += "<th>960Hz</th><th>1.9kHz</th><th>3.8kHz</th><th>7.7kHz</th><th>15kHz</th>";
     x += "</thead>";
     x += "<tbody>";
-    for( p = 1; p <= 9; ++p ) { x += "<tr><td>"+p+"</td>";
+    for( p = 1; p <= 9; ++p ) { x += "<tr><td class='preset' id='preampQ"+p+"'>"+p+"</td>";
     for( e = 1; e <= 9; ++e ) { x += "<td>";
     x += "<div style='height:18px'><input class='slider' style='width:56px' type='range' min='1' max='9' id='grapheq1"+p+""+e+"'></div>";
     x += "</td>"; } x += "</tr>"; }
@@ -39,6 +39,7 @@ function flexfx_preamp__initialize( instance_number, midi_port )
     n = instance_number;
     for( preset = 1; preset <= 9; ++preset ) {
         $("preampP"+preset).onclick = on_preamp_select;
+        $("preampQ"+preset).onclick = on_preamp_select;
         for( param = 1; param <= 5; ++param ) {
             for( stage = 1; stage <= 3; ++stage ) {
                 $("preamp1"+preset+""+param+""+stage).oninput = on_preamp_input; }}
@@ -50,9 +51,13 @@ function on_preamp_select( event )
     if( event.target.innerHTML[0] == '[' ) preset = parseInt( event.target.innerHTML[1] );
     else preset = parseInt( event.target.innerHTML );
 
-    //parent = event.target.parentNode.parentNode;
-    //for( i = 1; i < 9; ++i ) parent.children[i-1].children[0].innerHTML = i;
-    //parent.children[preset-1].children[0].innerHTML = "[" + preset + "]";
+    parent = $("preampP"+preset).parentNode.parentNode;
+    for( i = 1; i <= 9; ++i ) parent.children[i-1].children[0].innerHTML = i;
+    parent.children[preset-1].children[0].innerHTML = "[" + preset + "]";
+
+    parent = $("preampQ"+preset).parentNode.parentNode;
+    for( i = 1; i <= 9; ++i ) parent.children[i-1].children[0].innerHTML = i;
+    parent.children[preset-1].children[0].innerHTML = "[" + preset + "]";
 
     //port.send( flexfx_property_to_midi( property ));
 }
