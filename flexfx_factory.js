@@ -10,7 +10,7 @@ function flexfx_factory__create( instance_number )
     x += "'LOAD FIRMWARE' button to select a firmware image to load into this device.";
     x += "</p>";
     x += "</div></div>";
-    x += "<table class='factory'>";
+    x += "<table class='flexfx'>";
     x += "<tbody><tr>";
     x += "<td><input type='file' style='display:none' id='flexfx_factoryI'/><button id='flexfx_factoryB'>Load Firmware</button></td>";
     x += "</tr></tbody></table>";

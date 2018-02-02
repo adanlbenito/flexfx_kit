@@ -12,7 +12,7 @@ function flexfx_cabsim__create( instance_number )
     x += "separate mono WAV files.";
     x += "</p>";
     x += "</div></div>";
-    x += "<table class='cabsim'>";
+    x += "<table class='flexfx'>";
     x += "<thead>";
     x += "<tr><th>Left/Mono</th><th>Right/Stereo</th><th>File Name(s)</th></tr>";
     x += "</thead>";
