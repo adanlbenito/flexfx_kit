@@ -68,18 +68,26 @@ function _on_midi_success( midiAccess )
 
     for( var port = midi_inputs.next(); !port.done; port = midi_inputs.next() )
     {
-        var tag = _tohex( port.value.id ).toString(16);
-        _midi_input_tags.push( tag );
-        _midi_input_ports[tag] = port.value;
-        port.value.onmidimessage = _on_midi_message;
+        //if( port.value.manufacturer == "FlexFX" )
+        {
+            var tag = _tohex( port.value.id ).toString(16);
+            _midi_input_tags.push( tag );
+            _midi_input_ports[tag] = port.value;
+            port.value.onmidimessage = _on_midi_message;
+        }
     }
     for( var port = midi_outputs.next(); !port.done; port = midi_outputs.next())
     {
-        var tag = _tohex( port.value.id ).toString(16);
-        _midi_output_tags.push( tag );
-        _midi_output_ports[tag] = port.value;
-        //midi_input_port.send( property_to_midi_sysex( [11,22,33,44,55,66] ));
+        //if( port.value.manufacturer == "FlexFX" )
+        {
+            var tag = _tohex( port.value.id ).toString(16);
+            _midi_output_tags.push( tag );
+            _midi_output_ports[tag] = port.value;
+            //midi_input_port.send( property_to_midi_sysex( [11,22,33,44,55,66] ));
+        }
     }
+
+    _midi_output_tags[0] = "12345678";
 
     _load_controller( "flexfx_factory", _midi_output_tags[0], 0 );
     _load_controller( "flexfx_cabsim", _midi_output_tags[0], 0 );
