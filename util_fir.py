@@ -21,9 +21,10 @@ passband_ripple = float( sys.argv[3] )
 stopband_atten  = float( sys.argv[4] )
 
 width = abs(passband_freq - stopband_freq) / 0.5
-(tap_count,beta) = kaiserord( ripple=stopband_atten, width=width )
+(tap_count,beta) = kaiserord( ripple = stopband_atten, width = width )
 
-taps = firwin( numtaps=tap_count, cutoff  = ((passband_freq+stopband_freq)/2)/0.5, \
+taps = firwin( numtaps = tap_count, \
+               cutoff  = ((passband_freq+stopband_freq)/2)/0.5, \
                window  = ('kaiser', beta) )
 
 figure(1)
@@ -46,8 +47,37 @@ ylim( -120.0, +3.0 )
 grid(True)
 
 show()
-
 ii = 0
+
+"""
+print "int coeffs[%u] = " % len(taps)
+print "{\t"
+for cc in taps[0:len(taps)-1:3]:
+    if (ii % 5) == 0: sys.stdout.write('    ')
+    sys.stdout.write( "FQ(%+1.9f)," % cc )
+    ii += 1
+    if (ii % 5) == 0: sys.stdout.write('\n')
+sys.stdout.write( "FQ(%+1.9f)\n" % taps[len(taps)-1] )
+print "};"
+print "{\t"
+for cc in taps[1:len(taps)-1:3]:
+    if (ii % 5) == 0: sys.stdout.write('    ')
+    sys.stdout.write( "FQ(%+1.9f)," % cc )
+    ii += 1
+    if (ii % 5) == 0: sys.stdout.write('\n')
+sys.stdout.write( "FQ(%+1.9f)\n" % taps[len(taps)-1] )
+print "};"
+print "{\t"
+for cc in taps[2:len(taps)-1:3]:
+    if (ii % 5) == 0: sys.stdout.write('    ')
+    sys.stdout.write( "FQ(%+1.9f)," % cc )
+    ii += 1
+    if (ii % 5) == 0: sys.stdout.write('\n')
+sys.stdout.write( "FQ(%+1.9f)\n" % taps[len(taps)-1] )
+print "};"
+exit(0)
+"""
+
 print "int coeffs[%u] = " % len(taps)
 print "{\t"
 for cc in taps[0:len(taps)-1]:

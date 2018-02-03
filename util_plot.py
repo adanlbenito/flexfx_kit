@@ -52,6 +52,7 @@ while True:
         #yy[ii][N] = xx
         yy[ii][N] = float(ll[ii])
     N += 1
+    if N == 65536: break
 file.close()
 
 xx = [0] * N
@@ -121,3 +122,47 @@ if sys.argv[2] == "freq":
     matplotlib.pyplot.xticks( numpy.arange(min(ff), max(ff), (max(ff)-min(ff))/10 ))
     matplotlib.pyplot.yticks( numpy.arange(-120, 0, (20+130)/15 ))
     matplotlib.pyplot.show()
+
+from numpy import argmax, sqrt, mean, absolute, arange, log10
+from scipy.signal import blackmanharris
+from numpy.fft import rfft, irfft
+
+def find_range(f, x):
+    lowermin = 0; uppermin = 0
+    for i in arange(x+1, len(f)):
+        if f[i+1] >= f[i]:
+            uppermin = i
+            break
+    for i in arange(x-1, 0, -1):
+        if f[i] <= f[i-1]:
+            lowermin = i + 1
+            break
+    return (lowermin, uppermin)
+
+for signal in yy:
+
+    if K == 0: break
+    K -= 1
+
+    # Get rid of DC and window the signal
+    signal -= mean(signal) # TODO: Do this in the frequency domain, and take any skirts with it?
+    windowed = signal * blackmanharris(len(signal))  # TODO Kaiser?
+
+    # Measure the total signal before filtering but after windowing
+    total_rms = sqrt(mean(absolute(windowed)**2))
+
+    # Find the peak of the frequency spectrum (fundamental frequency), and
+    # filter the signal by throwing away values between the nearest local minima
+    f = rfft(windowed); i = argmax(abs(f))
+    lowermin, uppermin = find_range(abs(f), i)
+    f[lowermin: uppermin] = 0
+
+    # Transform noise back into the signal domain and measure it
+    # TODO: Could probably calculate the RMS directly in the frequency domain instead
+    noise = irfft(f)
+    rms_flat = sqrt(mean(absolute(noise)**2))
+    THDN = rms_flat / total_rms
+    print "DynRange = %06.1fdB, SNR = %05.1fdB, THD+N = %04.1f%%" % \
+           (20 * log10(total_rms), \
+           20 * log10(total_rms) - 20 * log10(rms_flat), \
+           THDN * 100 )

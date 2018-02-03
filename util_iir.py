@@ -163,11 +163,12 @@ def _make_biquad_peaking( filter_freq, q_factor, gain_db ):
 	a1 = -2.0 * np.cos(w0)
 	a2 = +1.0 - alpha / A
 
-    if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
+	if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
 	if gain_db  < 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3+gain_db, ymax=3 )
 	if gain_db  > 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3+gain_db )
 
 	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
+	#print "    { FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),0 }," % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
 def _make_biquad_lowshelf( filter_freq, q_factor, gain_db ):
 
@@ -183,7 +184,7 @@ def _make_biquad_lowshelf( filter_freq, q_factor, gain_db ):
 	a1 =   -2*( (A-1) + (A+1)*np.cos(w0)                   )
 	a2 =        (A+1) + (A-1)*np.cos(w0) - 2*np.sqrt(A)*alpha
 
-    if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
+	if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
 	if gain_db  < 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3+gain_db, ymax=3 )
 	if gain_db  > 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3+gain_db )
 
@@ -203,17 +204,31 @@ def _make_biquad_highshelf( filter_freq, q_factor, gain_db ):
 	a1 =    2*( (A-1) - (A+1)*np.cos(w0)                   )
 	a2 =        (A+1) - (A-1)*np.cos(w0) - 2*np.sqrt(A)*alpha
 
-    if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
+	if gain_db == 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3 )
 	if gain_db  < 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3+gain_db, ymax=3 )
 	if gain_db  > 0: plot_response( [b0,b1,b2],[a0,a1,a2], ymin=-3, ymax=3+gain_db )
 
 	print "int coeffs[5] = {FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f),FQ(%+1.9f)};" % (b0/a0,b1/a0,b2/a0,-a1/a0,-a2/a0)
 
-if type == "notch":      (b0,b1,b2,a0,a1,a2) = _make_biquad_notch    ( freq, Q )
-if type == "lowpass":    (b0,b1,b2,a0,a1,a2) = _make_biquad_lowpass  ( freq, Q )
-if type == "highpass":   (b0,b1,b2,a0,a1,a2) = _make_biquad_highpass ( freq, Q )
-if type == "allpass":    (b0,b1,b2,a0,a1,a2) = _make_biquad_allpass  ( freq, Q )
-if type == "bandpass":   (b0,b1,b2,a0,a1,a2) = _make_biquad_bandpass ( freq, Q )
-if type == "peaking":    (b0,b1,b2,a0,a1,a2) = _make_biquad_peaking  ( freq, Q, gain )
-if type == "highshelf":  (b0,b1,b2,a0,a1,a2) = _make_biquad_highshelf( freq, Q, gain )
-if type == "lowshelf":   (b0,b1,b2,a0,a1,a2) = _make_biquad_lowshelf ( freq, Q, gain )
+"""
+Q = 1.0
+_make_biquad_peaking(  400.0/960000, Q, 6.0 )
+_make_biquad_peaking(  500.0/960000, Q, 6.0 )
+_make_biquad_peaking(  600.0/960000, Q, 6.0 )
+_make_biquad_peaking(  700.0/960000, Q, 6.0 )
+_make_biquad_peaking(  800.0/960000, Q, 6.0 )
+_make_biquad_peaking(  900.0/960000, Q, 6.0 )
+_make_biquad_peaking( 1000.0/960000, Q, 6.0 )
+_make_biquad_peaking( 1100.0/960000, Q, 6.0 )
+_make_biquad_peaking( 1200.0/960000, Q, 6.0 )
+exit(0)
+"""
+
+if type == "notch":      _make_biquad_notch    ( freq, Q )
+if type == "lowpass":    _make_biquad_lowpass  ( freq, Q )
+if type == "highpass":   _make_biquad_highpass ( freq, Q )
+if type == "allpass":    _make_biquad_allpass  ( freq, Q )
+if type == "bandpass":   _make_biquad_bandpass ( freq, Q )
+if type == "peaking":    _make_biquad_peaking  ( freq, Q, gain )
+if type == "highshelf":  _make_biquad_highshelf( freq, Q, gain )
+if type == "lowshelf":   _make_biquad_lowshelf ( freq, Q, gain )
