@@ -2,8 +2,7 @@
 #include <math.h>
 #include <string.h>
 
-const char* company_name_string    = "FlexFX";  // Your company name
-const char* product_name_string    = "Example"; // Your product name
+const char* product_name_string    = "FlexFX Example"; // Your company/product name
 const int   audio_sample_rate      = 48000;     // Audio sampling frequency
 const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
 const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
