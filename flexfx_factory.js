@@ -1,7 +1,6 @@
-function flexfx_factory__create( instance_number )
+function flexfx_factory( tag )
 {
-    n = instance_number;
-    x = "";
+    var x = "";
     x += "<div class='row'>";
     x += "<div class='column' style='margin-top:3%'>";
     x += "<h4>FLEXFX</h4>";
@@ -12,29 +11,32 @@ function flexfx_factory__create( instance_number )
     x += "</div></div>";
     x += "<table class='flexfx'>";
     x += "<tbody><tr>";
-    x += "<td><input type='file' style='display:none' id='flexfx_factoryI'/><button id='flexfx_factoryB'>Load Firmware</button></td>";
+    x += "<td><input type='file' style='display:none' id='"+tag+"_input'/><button id='"+tag+"_button'>Load Firmware</button></td>";
     x += "</tr></tbody></table>";
-    return x;
+    return { "html":x, "initialize":_initialize };
 }
 
-function flexfx_factory__initialize( instance_number, midi_port )
+function _initialize( tag )
 {
-    n = instance_number;
-    $("flexfx_factoryB").onclick  = _flexfx_factory__on_button;
-    $("flexfx_factoryI").onchange = _flexfx_factory__on_input;
+    $(tag+"_button").onclick = _on_button;
+    $(tag+"_input").onchange = _on_input;
+    return _on_property;
 }
 
-function _flexfx_factory__on_input( event )
+function _on_input( event )
 {
-    file_object = $("flexfx_factoryI").files[0];
-    flexfx_load_firmware( file_object, _load_firmware_status );
+    var tag  = flexfx_tag_from_id( event.target.id );
+    var port = flexfx_port_from_id( event.target.id );
+    file_object = $(tag+"_input").files[0];
+    //flexfx_write_firmware( port, file_object, _on_property );
 }
 
-function _flexfx_factory__on_button( event )
+function _on_button( event )
 {
-    $("flexfx_factoryI").click();
+    var tag = flexfx_tag_from_id( event.target.id );
+    $(tag+"_input").click();
 }
 
-function _load_firmware_status( event )
+function _on_property( property )
 {
 }

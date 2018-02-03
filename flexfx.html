@@ -20,16 +20,11 @@
 
 <script>
 
-var midi_access, midi_inputs, midi_outputs, output_ports = {};
-var midi_input_names = [], midi_output_names = [];
-var flexfx_property = 0;
+var _midi_input_tags = [], _midi_input_ports = {};
+var _midi_output_tags = [], _midi_output_ports = {};
 
 window.addEventListener('load', function()
 {
-    _load_controller( "flexfx_factory" );
-    _load_controller( "flexfx_cabsim" );
-    _load_controller( "flexfx_preamp" );
-
     if(navigator.requestMIDIAccess)
     {
         navigator.requestMIDIAccess({sysex:true}).then(_on_midi_success,_on_midi_failure);
@@ -37,57 +32,77 @@ window.addEventListener('load', function()
     else document.write( "This browser does not support MIDI access." );
 });
 
-function _load_controller( effect_name, instance_num, midi_port )
+function _load_controller( effect_name, instance_tag )
 {
-    //var script = document.createElement( 'link' );
+    //var script = document.createElement('link');
     //script.rel = "stylesheet";
     //script.type = "text/css";
     //script.href = effect_name + ".css";
     //document.getElementsByTagName("head")[0].appendChild(script);
 
-    var script = document.createElement( 'script' );
+    var script = document.createElement('script');
     script.type = "text/javascript";
     script.src = effect_name + ".js";
     script.async = false;
     script.onload = function(e)
     {
-        $(effect_name).innerHTML = eval( effect_name+"__create("+instance_num+");" );
-        eval( effect_name+"__initialize("+instance_num+","+midi_port+");" );
+        object = eval( effect_name+"('"+instance_tag+"');" );
+        $(effect_name).innerHTML = object.html;
+        object.initialize( instance_tag );
     };
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 
+function _tohex( x )
+{
+    x = parseInt(x);
+    if(x<0) return (0xffffffff+x+1).toString(16);
+    else return x.toString(16);
+}
+
 function _on_midi_success( midiAccess )
 {
-    midi_access  = midiAccess;
-    midi_inputs  = midi_access.inputs.values();
-    midi_outputs = midi_access.outputs.values();
+    var midi_access  = midiAccess;
+    var midi_inputs  = midi_access.inputs.values();
+    var midi_outputs = midi_access.outputs.values();
 
     for( var port = midi_inputs.next(); !port.done; port = midi_inputs.next() )
     {
+        var tag = _tohex( port.value.id ).toString(16);
+        _midi_input_tags.push( tag );
+        _midi_input_ports[tag] = port.value;
         port.value.onmidimessage = _on_midi_message;
     }
     for( var port = midi_outputs.next(); !port.done; port = midi_outputs.next())
     {
-        output_ports[port.value.id] = port.value;
+        var tag = _tohex( port.value.id ).toString(16);
+        _midi_output_tags.push( tag );
+        _midi_output_ports[tag] = port.value;
         //midi_input_port.send( property_to_midi_sysex( [11,22,33,44,55,66] ));
     }
+
+    _load_controller( "flexfx_factory", _midi_output_tags[0], 0 );
+    _load_controller( "flexfx_cabsim", _midi_output_tags[0], 0 );
+    _load_controller( "flexfx_preamp", _midi_output_tags[0], 0 );
 }
 
 function _on_midi_failure( error ) { document.write( "MIDI access denied." ); }
 
 function _on_midi_message( event )
 {
-    property = midi_sysex_to_property( event.data );
+    var property = midi_sysex_to_property( event.data );
     console.log( "Property=[" + property[0] + "," + property[1] + "," + property[2] + "," +
                  property[2] + "," + property[4] + "," + property[5] + "]" );
     flexfx_property = property;
 }
 
+function flexfx_tag_from_id( id ) { return id.slice(0,8); }
+function flexfx_port_from_id( id ) { return _midi_input_ports[id.slice(0,8)]; }
+
 function flexfx_property_to_midi( property )
 {
-    midi_data = [0xF0];
-    for( ii = 0; ii < 6; ++ii )
+    var midi_data = [0xF0];
+    for( var ii = 0; ii < 6; ++ii )
     {
         midi_data.push( (property[ii]>>28)&15 ); midi_data.push( (property[ii]>>24)&15 );
         midi_data.push( (property[ii]>>20)&15 ); midi_data.push( (property[ii]>>16)&15 );
@@ -100,8 +115,8 @@ function flexfx_property_to_midi( property )
 
 function flexfx_midi_to_prop( midi_data )
 {
-    property = [0,0,0,0,0,0];
-    for( ii = 0; ii < 6; ++ii )
+    var property = [0,0,0,0,0,0];
+    for( var ii = 0; ii < 6; ++ii )
     {
         property[ii] = (midi_data[8*ii+1]<<28) + (midi_data[8*ii+2]<<24)
                      + (midi_data[8*ii+3]<<20) + (midi_data[8*ii+4]<<16)
@@ -119,46 +134,103 @@ function array_to_ui4le(a) { return a[0]+256*a[1]+65536*a[2]+16777216*a[3]; a=a.
 
 var _firmware_data, _midi_port, _load_count;
 
-function _flexfx_load_firmware_begin()
+function _flexfx_write_firmware_begin()
 {
     midi_port.send( flexfx_property_to_midi( [1,0,0,0,0,0] ));
-   setInterval( _flexfx_load_firmware_next, 130 );
+    setInterval( _flexfx_write_firmware_next, 130 );
 }
 
-function _flexfx_load_firmware_next()
+function _flexfx_write_firmware_next()
 {
     if( _firmware_data.length > 0 )
     {
-        property = [2,0,0,0,0,0];
+        var property = [2,0,0,0,0,0];
         property[1] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
         property[2] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
         property[3] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
         property[4] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
         property[5] = array_to_ui4le( _firmware_data ); _firmware_data = data.slice(4);
         midi_port.send( flexfx_property_to_midi( property ));
-        if( (++_load_count % 16) == 0 ) setInterval( _flexfx_load_firmware_next, 13 );
-        else setInterval( _flexfx_load_firmware_next, 1 );
+        if( (++_load_count % 16) == 0 ) setInterval( _flexfx_write_firmware_next, 13 );
+        else setInterval( _flexfx_write_firmware_next, 1 );
     }
-    else setInterval( _flexfx_load_firmware_end, 13 );
+    else setInterval( _flexfx_write_firmware_end, 13 );
 }
 
-function _flexfx_load_firmware_end()
+function _flexfx_write_firmware_end()
 {
     midi_port.send( flexfx_property_to_midi( [3,0,0,0,0,0] ));
 }
 
-function flexfx_load_firmware( midi_port, file_object, status_handler )
+function flexfx_write_firmware( midi_port, file_object, status_handler )
 {
     var reader = new FileReader();
     reader.onload = function(e)
     {
         _firmware_data = new Uint8Array( reader.result );
-        setInterval( _flexfx_load_firmware_begin, 6000 );
+        setInterval( _flexfx_write_firmware_begin, 6000 );
         //port = output_ports["Example"];
     }
     _load_count = 0;
     _midi_port = midi_port;
     reader.readAsArrayBuffer( file_object );
+}
+
+function flexfx_wave_to_samples( data )
+{
+    var format, channels, rate, thruput, align, width;
+    var samples = new Array();
+    var rate = 0; samples = [];
+    var group_id   = array_to_ui4le(data); data = data.slice(4); // Signature for 'RIFF'
+    var total_size = array_to_ui4le(data); data = data.slice(4);
+    var type_id    = array_to_ui4le(data); data = data.slice(4); // Signature for 'WAVE'
+
+    while( 1 )
+    {
+        if( data.length < 8 ) break;
+        var blockid = array_to_ui4le(data); data = data.slice(4);
+        var blocksz = array_to_ui4le(data); data = data.slice(4);
+
+        if( blockid == 0x20746D66) // Signature for 'fmt'
+        {
+            if( data.length < 16 ) break;
+            format   = array_to_ui2le(data); data = data.slice(2);
+            channels = array_to_ui2le(data); data = data.slice(2);
+            rate     = array_to_ui4le(data); data = data.slice(4);
+            thruput  = array_to_ui4le(data); data = data.slice(4);
+            align    = array_to_ui2le(data); data = data.slice(2);
+            width    = array_to_ui2le(data); data = data.slice(2);
+            console.log( "WaveIn: ByteCount=%u Channels=%u Rate=%u WordSize=%u", blocksz,channels,rate,width );
+        }
+        else if( blockid == 0x61746164 ) // Signature for 'data'
+        {
+            if( data.length < blocksz ) break;
+            var count = blocksz / (width/8);
+
+            if( channels == 1 ) {
+                while( count-- > 0  ) {
+                    if( width == 8 ) {
+                        samples.push( data[0]*256*256*256 );
+                        data = data.slice(1);
+                    }
+                    if( width == 16 ) {
+                        samples.push( data[1]*256*256*256 + data[0]*256*256 );
+                        data = data.slice(2);
+                    }
+                    if( width == 24 ) {
+                        samples.push( data[2]*256*256*256 + data[1]*256*256 + data[0]*256 );
+                        data = data.slice(3);
+                    }
+                    if( width == 32 ) {
+                        samples.push( data[3]*256*256*256 + data[2]*256*256 + data[1]*256 + data[0] );
+                        value += data[0];
+                        data = data.slice(4);
+                    }
+                }
+            }
+        }
+    }
+    return samples;
 }
 
 </script>

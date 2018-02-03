@@ -1,7 +1,7 @@
-function flexfx_cabsim__create( instance_number )
+function flexfx_cabsim( tag )
 {
-    n = instance_number;
-    x = "";
+    var x = "";
+
     x += "<div class='row'>";
     x += "<div class='column' style='margin-top:3%'>";
     x += "<h4>FLEXFX - CABSIM</h4>";
@@ -16,66 +16,73 @@ function flexfx_cabsim__create( instance_number )
     x += "<thead>";
     x += "<tr><th>Preset</th><th>Left/Mono</th><th>Right/Stereo</th><th>File Name(s)</th></tr>";
     x += "</thead>";
+
     x += "<tbody>";
-    for( p = 1; p <= 9; ++p ) {
-    x += "<tr><td class='preset' id='cabsimP"+p+"'>"+p+"</td>";
-    x += "<td><input type='file' style='display:none' id='flexfx_cabsimI1"+p+"L'/><button id='flexfx_cabsimB1"+p+"L'>Select IR</button></td>";
-    x += "<td><input type='file' style='display:none' id='flexfx_cabsimI1"+p+"R'/><button id='flexfx_cabsimB1"+p+"R'>Select IR</button></td>";
+    for( var p = 1; p <= 9; ++p ) {
+    x += "<tr><td class='preset' id='"+tag+"_preset"+p+"'>"+p+"</td>";
+    x += "<td><input type='file' style='display:none' id='"+tag+"_input"+p+"L'/><button id='"+tag+"_button"+p+"L'>Select IR</button></td>";
+    x += "<td><input type='file' style='display:none' id='"+tag+"_input"+p+"R'/><button id='"+tag+"_button"+p+"R'>Select IR</button></td>";
     x += "<td><div style='display:inline-block'>";
-    x += "<div id='flexfx_cabsimT1"+p+"L'>Celestion G12H Ann 152 Open Room.wav</div>";
-    x += "<div id='flexfx_cabsimT1"+p+"R'>Celestion G12H Ann 152 Open Room.wav</div>";
+    x += "<div id='"+tag+"_text"+p+"L'>Celestion G12H Ann 152 Open Room.wav</div>";
+    x += "<div id='"+tag+"_text"+p+"R'>Celestion G12H Ann 152 Open Room.wav</div>";
     x += "</div></td>"; x += "</tr>"; }
     x += "</tbody></table>";
-    return x;
+
+    return { "html":x, "initialize":_initialize };
 }
 
-function flexfx_cabsim__initialize( instance_number, midi_port )
+function _initialize( tag )
 {
-    n = instance_number;
-    for( i = 1; i <= 9; ++i )
+    for( var i = 1; i <= 9; ++i )
     {
-        $("cabsimP"+i).onclick = on_cabsim_select;
+        $(tag+"_preset"+i).onclick = on_cabsim_select;
 
-        $("flexfx_cabsimB1"+i+"L").onclick  = _flexfx_cabsim__on_button;
-        $("flexfx_cabsimB1"+i+"R").onclick  = _flexfx_cabsim__on_button;
-        $("flexfx_cabsimI1"+i+"L").onchange = _flexfx_cabsim__on_input;
-        $("flexfx_cabsimI1"+i+"R").onchange = _flexfx_cabsim__on_input;
+        $(tag+"_button"+i+"L").onclick = _on_button;
+        $(tag+"_button"+i+"R").onclick = _on_button;
+        $(tag+"_input"+i+"L").onchange = _on_input;
+        $(tag+"_input"+i+"R").onchange = _on_input;
     }
+    return _on_property_received;
 }
 
 function on_cabsim_select( event )
 {
+    var tag  = flexfx_tag_from_id( event.target.id );
+    var port = flexfx_port_from_id( event.target.id );
+
     if( event.target.innerHTML[0] == '[' ) preset = parseInt( event.target.innerHTML[1] );
     else preset = parseInt( event.target.innerHTML );
 
-    parent = $("cabsimP"+preset).parentNode.parentNode;
-    for( i = 1; i <= 9; ++i ) parent.children[i-1].children[0].innerHTML = i;
+    parent = $(tag+"_preset"+preset).parentNode.parentNode;
+    for( var i = 1; i <= 9; ++i ) parent.children[i-1].children[0].innerHTML = i;
     parent.children[preset-1].children[0].innerHTML = "[" + preset + "]";
 
-    //port.send( flexfx_property_to_midi( property ));
+    //flexfx_send_property( port, property );
 }
 
-function _flexfx_cabsim__on_input( event )
+function _on_input( event )
 {
-    unit   = parseInt( event.target.id["flexfx_cabsimI".length+0] );
-    preset = parseInt( event.target.id["flexfx_cabsimI".length+1] );
-    side   = event.target.id[9];
+    var tag    = flexfx_tag_from_id( event.target.id );
+    var port   = flexfx_port_from_id( event.target.id );
+    var unit   = parseInt( event.target.id[tag+"_input".length+0] );
+    var preset = parseInt( event.target.id[tag+"_input".length+1] );
+    var side   = event.target.id[9];
+    var file   = $(tag+"_input"+unit+""+preset+side).files[0];
 
-    file   = $("flexfx_cabsimI"+unit+""+preset+side).files[0];
-    $("flexfx_cabsimT"+unit+""+preset+side).textContent = file.name;
+    $(tag+"_text"+unit+""+preset+side).textContent = file.name;
 
     var reader = new FileReader();
     reader.onload = function(e)
     {
-        samples = wave_to_samples( new Uint8Array( reader.result ));
+        var samples = flexfx_wave_to_samples( new Uint8Array( reader.result ));
         console.log( samples.length );
-        //port = output_ports["FlexFX Cabsim"];
-        port = output_ports["Example"];
+        //var tag = output_ports["FlexFX Cabsim"];
+        var tag = output_ports["Example"];
 
-        offset = 0;
+        var offset = 0;
         while( offset < 1200 ) {
             if( samples.length >= 4 ) {
-                property = [ 0x01018000+offset/5, samples[0],samples[1],samples[2],samples[3],samples[4] ];
+                var property = [ 0x01018000+offset/5, samples[0],samples[1],samples[2],samples[3],samples[4] ];
                 samples = samples.slice( 5 );
                 flexfx_property = [0,0,0,0,0,0];
                 port.send( flexfx_property_to_midi( property ));
@@ -87,67 +94,18 @@ function _flexfx_cabsim__on_input( event )
     reader.readAsArrayBuffer( file );
 }
 
-function _flexfx_cabsim__on_button( event )
+function _on_button( event )
 {
-    unit   = parseInt( event.target.id["flexfx_cabsimI".length+0] );
-    preset = parseInt( event.target.id["flexfx_cabsimI".length+1] );
-    side   =           event.target.id["flexfx_cabsimI".length+2];
-    $("flexfx_cabsimI"+unit+""+preset+side).click();
+    var tag    = flexfx_tag_from_id( event.target.id );
+    var preset = parseInt( event.target.id[(tag+"_button").length+0] );
+    var side   = event.target.id[(tag+"_button").length+1];
+    $(tag+"_input"+preset+""+side).click();
 }
 
-function _flexfx_cabsim__wave_to_samples( data )
+function _on_property_received( property )
 {
-    var format, channels, rate, thruput, align, width;
-    var samples = new Array();
-    rate = 0; samples = [];
-    group_id   = array_to_ui4le(data); data = data.slice(4); // Signature for 'RIFF'
-    total_size = array_to_ui4le(data); data = data.slice(4);
-    type_id    = array_to_ui4le(data); data = data.slice(4); // Signature for 'WAVE'
+}
 
-    while( 1 )
-    {
-        if( data.length < 8 ) break;
-        blockid = array_to_ui4le(data); data = data.slice(4);
-        blocksz = array_to_ui4le(data); data = data.slice(4);
-
-        if( blockid == 0x20746D66) // Signature for 'fmt'
-        {
-            if( data.length < 16 ) break;
-            format   = array_to_ui2le(data); data = data.slice(2);
-            channels = array_to_ui2le(data); data = data.slice(2);
-            rate     = array_to_ui4le(data); data = data.slice(4);
-            thruput  = array_to_ui4le(data); data = data.slice(4);
-            align    = array_to_ui2le(data); data = data.slice(2);
-            width    = array_to_ui2le(data); data = data.slice(2);
-            console.log( "WaveIn: ByteCount=%u Channels=%u Rate=%u WordSize=%u", blocksz,channels,rate,width );
-        }
-        else if( blockid == 0x61746164 ) // Signature for 'data'
-        {
-            if( data.length < blocksz ) break;
-            count = blocksz / (width/8);
-
-            if( channels == 1 ) {
-                while( count-- > 0  ) {
-                    if( width == 8 ) {
-                        samples.push( data[0]*256*256*256 );
-                        data = data.slice(1);
-                    }
-                    if( width == 16 ) {
-                        samples.push( data[1]*256*256*256 + data[0]*256*256 );
-                        data = data.slice(2);
-                    }
-                    if( width == 24 ) {
-                        samples.push( data[2]*256*256*256 + data[1]*256*256 + data[0]*256 );
-                        data = data.slice(3);
-                    }
-                    if( width == 32 ) {
-                        samples.push( data[3]*256*256*256 + data[2]*256*256 + data[1]*256 + data[0] );
-                        value += data[0];
-                        data = data.slice(4);
-                    }
-                }
-            }
-        }
-    }
-    return samples;
+function _on_firmware_status( status )
+{
 }
