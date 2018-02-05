@@ -1,4 +1,4 @@
-# FLEXFX DIGITAL PREAMP (3302)
+# FLEXFX DIGITAL PREAMP
 #
 # Three-stage tube preamp. Each stage implements a triode preamp model. The
 # three stages are followed by a grapic EQ. Preamp and tone parameters range
@@ -8,16 +8,36 @@
 # PROPERTIES SUMMARY
 #
 # PROPERTY   DIRECTION        DESCRIPTION
-# 33020000   Host to Device   List all control (knobs,buttons) and preset data
-# 33020001   Birdirectional   Control levels to write or current control levels
-# 33020n01   Birdirectional   Up to 20 charactr name for preset N (zero padded)
-# 33020102   Birdirectional   Preset N data to write or current preset N data
+# 00000001   Bidirectional    Identify device
+#
+# PROPERTY LAYOUT ...
+#
+# PROPERTY   DIRECTION        DESCRIPTION
+# 00000011   Bidirectional    Begin firmware upgrade, echoed back to host
+# 00000012   Bidirectional    Next 40 bytes of firmware image data, echoed
+# 00000013   Bidirectional    End firmware upgrade, echoed back to host
+#
+# PROPERTY   DIRECTION        DESCRIPTION
+# 00000021   Host to Device   Start dumping the text in this file
+# 00000022   Device to Host   Next 40 bytes of property interface text
+# 00000023   Device to Host   End of property interface text dump
+# 00000031   Host to Device   Start a controller javascript code dump
+# 00000032   Device to Host   Next 40 bytes of javascript code text
+# 00000033   Device to Host   End of controller javascript code text
+#
+# PROPERTY LAYOUT ...
+#
+# PROPERTY   DIRECTION        DESCRIPTION
+# 00008000   Host to Device   List all control (knobs,buttons) and preset data
+# 00008001   Bidirectional    Control levels to write or current control levels
+# 00008n01   Bidirectional    Up to 20 charactr name for preset N (1<=N<=9)
+# 00008102   Bidirectional    Preset N data to write or current preset N data
 #
 # PROPERTY LAYOUT for control (knobs, pushbuttons, etc) Values shown are 32-bit
 # values represented in ASCII/HEX format or as floating point values ranging
 # from +0.0 up to (not including) +1.0.
 #
-# +------- Effect identifier (3302 for Digital Preamp v1)
+# +------- Effect identifier
 # |
 # |        +-------------------------------- Volume level
 # |        |     +-------------------------- Tone setting
@@ -32,12 +52,12 @@
 # |        |     |     |     |     ||||||+-- Expression (1=plugged,0=unplugged)
 # |        |     |     |     |     |||||||+- USB Audio (1=active)
 # |        |     |     |     |     ||||||||
-# 33020001 0.500 0.500 0.500 0.500 91111111
+# 00008001 0.500 0.500 0.500 0.500 91111111
 #
 # PROPERTY LAYOUT for preset data. Values shown are 32-bit values represented
 # in ASCII/HEX format.
 #
-# +------- Effect identifier (3302 for Digital Preamp v1)
+# +------- Effect identifier
 # |
 # |    +-- Preset number (1 through 9)
 # |    |
@@ -59,4 +79,4 @@
 # |    |   |||||||  |||||||  |||||||  |||+++------ EQ bands 480Hz,960Hz,1k92
 # |    |   |||||||  |||||||  |||||||  ||||||++-+-- EQ bands 3k84,7k68,15k36
 # |    |   |||||||  |||||||  |||||||  |||||||| |
-# 33020n02 55555550 55555550 55555550 55555555 50000000
+# 00008n02 55555550 55555550 55555550 55555555 50000000

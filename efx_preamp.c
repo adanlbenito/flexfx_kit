@@ -10,6 +10,9 @@ const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input c
 const int   i2s_channel_count      = 2;         // ADC/DAC channels per SDIN/SDOUT wire (2,4,or 8)
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
+//const char  interface_string[] = "No interface is specified";
+//const char  controller_string[] = "No controller is available";
+
 void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
     efx_preamp__control( rcv_prop, usb_prop, dsp_prop );

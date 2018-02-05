@@ -8,9 +8,12 @@ def midi_list():
     index = 0
     for device in midiout.get_ports():
         sys.stdout.write( " %u=\'%s\'" % (index,device) )
+        index += 1
     sys.stdout.write( "\nMIDI Input Devices: " )
+    index = 0
     for device in midiin.get_ports():
         sys.stdout.write( " %u=\'%s\'" % (index,device) )
+        index += 1
     sys.stdout.write( "\n" )
 
 def midi_open( port_number ):
@@ -231,8 +234,16 @@ def _parse_wave( file ):
     return samples
 
 if len(sys.argv) < 3: # Usage 2 - Wait for properties and print them to STDOUT
+
     midi = midi_open( int(sys.argv[1]) )
+
+    data = property_to_midi_sysex( [4,0,0,0,0,0] )
+    midi_write( midi, data )
+    print midi_sysex_to_property( midi_wait( midi ));
+
     while True:
+        data = property_to_midi_sysex( [5,0,0,0,0,0] )
+        midi_write( midi, data )
         prop = midi_sysex_to_property( midi_wait( midi ));
         p1 = float(prop[1]) / 2**28
         p2 = float(prop[2]) / 2**28
@@ -246,6 +257,7 @@ if len(sys.argv) < 3: # Usage 2 - Wait for properties and print them to STDOUT
         if prop[5] & 0x80000000: p5 = -float((~prop[5] + 1) & 0xFFFFFFFF) / (2**28)
         print "%08x  %08x %08x %08x %08x %08x  %+01.5f %+01.5f %+01.5f %+01.5f %+01.5f" % \
               (prop[0],prop[1],prop[2],prop[3],prop[4],prop[5], p1,p2,p3,p4,p5 )
+        if prop[0] == 6: exit(0)
 
 name = sys.argv[2]
 
@@ -254,7 +266,7 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
     midi = midi_open( int(sys.argv[1]) )
     file = open( sys.argv[2], "rb" )
     count = 0
-    data = property_to_midi_sysex( [1,0,0,0,0,0] )
+    data = property_to_midi_sysex( [0x11,0,0,0,0,0] )
     sys.stdout.write("Erasing")
     sys.stdout.flush()
     midi_write( midi, data )
@@ -267,10 +279,10 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
         line = file.read( 16 )
         if len(line) == 0: break
         while len(line) < 16: line += chr(0)
-        data = [ 2, (ord(line[ 0])<<24)+(ord(line[ 1])<<16)+(ord(line[ 2])<<8)+ord(line[ 3]), \
-                    (ord(line[ 4])<<24)+(ord(line[ 5])<<16)+(ord(line[ 6])<<8)+ord(line[ 7]), \
-                    (ord(line[ 8])<<24)+(ord(line[ 9])<<16)+(ord(line[10])<<8)+ord(line[11]), \
-                    (ord(line[12])<<24)+(ord(line[13])<<16)+(ord(line[14])<<8)+ord(line[15]), \
+        data = [ 0x12, (ord(line[ 0])<<24)+(ord(line[ 1])<<16)+(ord(line[ 2])<<8)+ord(line[ 3]), \
+                       (ord(line[ 4])<<24)+(ord(line[ 5])<<16)+(ord(line[ 6])<<8)+ord(line[ 7]), \
+                       (ord(line[ 8])<<24)+(ord(line[ 9])<<16)+(ord(line[10])<<8)+ord(line[11]), \
+                       (ord(line[12])<<24)+(ord(line[13])<<16)+(ord(line[14])<<8)+ord(line[15]), \
                     0, 0, 0, 0 ]
         midi_write( midi, property_to_midi_sysex( data ))
         #prop = midi_sysex_to_property( midi_wait( midi ));
@@ -278,10 +290,10 @@ if name[len(name)-4:] == ".bin": # Usage 3 - Burn firmware image to FLASH boot p
             if count == 0 or (count % 256) == 0:
                 sys.stdout.write(".")
                 sys.stdout.flush()
-            time.sleep( 0.013 )
+            time.sleep( 0.015 )
         time.sleep( 0.001 )
         count += 1
-    data = property_to_midi_sysex( [3,0,0,0,0,0] )
+    data = property_to_midi_sysex( [0x13,0,0,0,0,0] )
     midi_write( midi, data )
     file.close()
     print( "Done." )
@@ -348,9 +360,13 @@ elif name[len(name)-4:] == ".txt": # Usage 6
                 int(line[4],16),int(line[5],16)]
         print "%08x %08x %08x %08x %08x %08x" % (prop[0],prop[1],prop[2],prop[3],prop[4],prop[5])
     file.close()
+    midi = midi_open( int(sys.argv[1]) )
+    midi_write( midi, property_to_midi_sysex( prop ))
 
 elif len(sys.argv) == 8: # Usage 7
 
     prop = [int(sys.argv[2],16),int(sys.argv[3],16),int(sys.argv[4],16),int(sys.argv[5],16), \
             int(sys.argv[6],16),int(sys.argv[7],16)]
     print "%08x %08x %08x %08x %08x %08x" % (prop[0],prop[1],prop[2],prop[3],prop[4],prop[5])
+    midi = midi_open( int(sys.argv[1]) )
+    midi_write( midi, property_to_midi_sysex( prop ))

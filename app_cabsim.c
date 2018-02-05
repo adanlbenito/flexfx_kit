@@ -2,11 +2,11 @@
 #include <math.h>
 #include <string.h>
 
-const char* product_name_string    = "FlexFX Example"; // Your company/product name
-const int   audio_sample_rate      = 48000;     // Audio sampling frequency
-const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count      = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char* product_name_string   = "FlexFX Example"; // Your company/product name
+const int   audio_sample_rate     = 48000;     // Audio sampling frequency
+const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
+const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
+const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
