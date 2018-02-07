@@ -1192,8 +1192,8 @@ Here's an example of a textual property interface definition for the 'efx_cabsim
 # 00000033   Device to Host   End of controller javascript code text
 #
 # PROPERTY   DIRECTION        DESCRIPTION
-# 00000007   Host to Device   List all control (knobs,buttons) and preset data
-# 00008000   Bidirectional    Control levels to write or current control levels
+# 00008000   Host to Device   List all control (knobs,buttons) and preset data
+# 00008001   Bidirectional    Update all controls (overrides physical controls)
 # 00008n01   Bidirectional    Up to 20 charactr name for preset N (1<=N<=9)
 # 00008n02   Bidirectional    Begin data upload for preset N, begin upload ACK
 # 00008n03   Bidirectional    Five IR data words for preset N or echoed data
