@@ -1131,9 +1131,9 @@ void dsp_thread5( int* samples, const int* property )
 }
 ```
 
-Standard Effects
+Prebuilt Effects
 ----------------------------------
-The FlexFX kit contains highly optimized effects. These effects are in binary form and can be used royaly free. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
+The FlexFX kit contains some highly optimized effects. These effects are in binary form and can be used royaly free. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
 
 The FlexFX properties definitions for uploading IR data (stored in wave files on a USB atteched host computer) is documented in 'efx_cabsim.txt' and is also available via USB MIDI by issueing the FlexFX USB/MIDI property for returning a device's MIDI interface (the text is returned via USB).  
 
@@ -1163,3 +1163,19 @@ void dsp_thread3( int* samples, const int* property ) {efx_cabsim__dsp_thread3(s
 void dsp_thread4( int* samples, const int* property ) {efx_cabsim__dsp_thread4(samples,property);}
 void dsp_thread5( int* samples, const int* property ) {efx_cabsim__dsp_thread5(samples,property);}
 ```
+
+Discovery and control
+----------------------------
+All USB MIDI data flow between a host computer and FlexFX devices occurs via FlexFX properties (see 'Run-time' Control above). FlexFX devices, including the optimized prebuilt effects (see 'Prebuilt Effects' above), support a discovery process whereby any host computer can querry a FlexFX device for both its MIDI interface and its Javascript control code via a FlexFX property.
+
+The FlexFx property interface data, returned in a human readable text) is returned via USB MIDI if the device receives FlexFX properties with ID's of 0x21 (begin), 0x22 (next), and 0x23 (end). The returned text can be used to provide additonal FlexFX property definitions for device specific (or effect specific) control. This textual data is automatically included in the FlexFX firmware image (see 'Development Steps' above) if a .txt file with the same name as the effect being built exists (e.g. efx_cabsim.txt for efx_cabsim.c firmware).
+
+Here's an example of a textual property interface definition for the 'efx_cabsim' effect:
+
+```
+```
+
+The FlexFX HTML5 control javascript source code is returned via USB MIDI if the device receives FlexFX properties with ID's of 0x31 (begin), 0x32 (next), and 0x33 (end). The returned code can be used in HTML5 applications to access and control FlexFX devices via HTML MIDI whoch is supported by Google Chrome. The HTML5 application called 'flexfx.html' will sense USB MIDI events, including the plugging and unplugging of FlexFX devices, querry the device for its javascript controller code, and display the device's GUI interface on a webpage. This javascript codeis automatically included in the FlexFX firmware image (see 'Development Steps' above) if a .js file with the same name as the effect being built exists (e.g. efx_cabsim.js for efx_cabsim.c firmware).
+
+Here's an example of HTML5 controller for the 'efx_cabsim' effect:
+![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/util_plot.png)
