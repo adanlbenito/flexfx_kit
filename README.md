@@ -1133,7 +1133,7 @@ void dsp_thread5( int* samples, const int* property )
 
 Standard Effects
 ----------------------------------
-The FlexFX kit contains highly optimized effects. These effects are in binary form and source code is not included but they can be used royaly and free. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
+The FlexFX kit contains highly optimized effects. These effects are in binary form and can be used royaly free. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
 
 The FlexFX properties definitions for uploading IR data (stored in wave files on a USB atteched host computer) is documented in 'efx_cabsim.txt' and is also available via USB MIDI by issueing the FlexFX USB/MIDI property for returning a device's MIDI interface (the text is returned via USB).  
 
@@ -1142,13 +1142,7 @@ This effect also supports the HTML5 interface for controlling the device (firmwa
 ```
 #include "efx_cabsim.h"
 
-const char* product_name_string    = "FlexFX Cabsim";  // Your company/product name
-const int   target_hardware        = 0;         // 0 for FlexFX Digital/ComboA, 1 for FlexFX ComboB
-const int   audio_sample_rate      = 48000;     // Default sample rate at boot-up
-const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count      = 2;         // ADC/DAC channels per SDIN/SDOUT wire (2,4,or 8)
-const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
+const char* product_name_string = "FlexFX Cabsim";  // Your company/product name
 
 void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
