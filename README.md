@@ -1164,7 +1164,7 @@ void dsp_thread4( int* samples, const int* property ) {efx_cabsim__dsp_thread4(s
 void dsp_thread5( int* samples, const int* property ) {efx_cabsim__dsp_thread5(samples,property);}
 ```
 
-Discovery and control
+Discovery and Control
 ----------------------------
 All USB MIDI data flow between a host computer and FlexFX devices occurs via FlexFX properties (see 'Run-time' Control above). FlexFX devices, including the optimized prebuilt effects (see 'Prebuilt Effects' above), support a discovery process whereby any host computer can querry a FlexFX device for both its MIDI interface and its Javascript control code via a FlexFX property.
 
