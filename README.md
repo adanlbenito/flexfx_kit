@@ -1181,12 +1181,15 @@ Here's an example of a textual property interface definition for the 'efx_cabsim
 # employed by specifying two mono WAV files.
 #
 # PROPERTY   DIRECTION        DESCRIPTION
-# 00000001   Bidirectional    Begin firmware upgrade, echoed back to host
-# 00000002   Bidirectional    Next 40 bytes of firmware image data, echoed
-# 00000003   Bidirectional    End firmware upgrade, echoed back to host
-# 00000004   Host to Device   Start a interface text or controller code dump
-# 00000005   Device to Host   Next 40 bytes of prop interface or js code
-# 00000006   Device to Host   End of property interface or javascript code dump
+# 00000011   Bidirectional    Begin firmware upgrade, echoed back to host
+# 00000012   Bidirectional    Next 40 bytes of firmware image data, echoed
+# 00000013   Bidirectional    End firmware upgrade, echoed back to host
+# 00000021   Host to Device   Start dumping the text in this file
+# 00000022   Device to Host   Next 40 bytes of property interface text
+# 00000023   Device to Host   End of property interface text dump
+# 00000031   Host to Device   Start a controller javascript code dump
+# 00000032   Device to Host   Next 40 bytes of javascript code text
+# 00000033   Device to Host   End of controller javascript code text
 #
 # PROPERTY   DIRECTION        DESCRIPTION
 # 00000007   Host to Device   List all control (knobs,buttons) and preset data
