@@ -1133,7 +1133,7 @@ void dsp_thread5( int* samples, const int* property )
 
 Prebuilt Effects
 ----------------------------------
-The FlexFX kit contains some highly optimized effects. These effects are in binary form and can be used royaly free. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
+The FlexFX kit contains some highly optimized effects. These effects are in binary form and can be used for free on FlexFX boards. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
 
 The FlexFX properties definitions for uploading IR data (stored in wave files on a USB atteched host computer) is documented in 'efx_cabsim.txt' and is also available via USB MIDI by issueing the FlexFX USB/MIDI property for returning a device's MIDI interface (the text is returned via USB).  
 
