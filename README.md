@@ -52,8 +52,7 @@ Minimum Application
 
 // System configuration ...
 
-const char* company_name_string    = "BitStream"; // Your company name
-const char* product_name_string    = "FlexFX";    // Your product name
+const char* product_name_string    = "FlexFX";    // Your company/product name
 const int   default_sample_rate    = 48000;       // Default sample rate at boot-up
 const int   supported_sample_rates = 0x02;        // 1=44k1, 2=48k0, 4=88k2, ... 32=192k0
 const int   dsp_in_out_chan_count  = 32;          // 32 channels to/from each DSP thread
@@ -61,6 +60,8 @@ const int   usb_output_chan_count  = 2;           // 2 USB audio class 2.0 outpu
 const int   usb_input_chan_count   = 2;           // 2 USB audio class 2.0 input channels
 const int   i2s_tdm_slot_count     = 2;           // 2 for I2S (Stereo), 4 for I4S, 8 = I8S
 const int   i2s_sync_word_format   = 0;           // 0 for PCM, 1 for I2S
+const char  interface_text[]       = "No interface is specified";
+const char  controller_app[]       = "No controller is available";
 
 // The control task is called at a rate of 1000 Hz and should be used to implement audio CODEC
 // initialization/control, pot and switch sensing via I2C ADC's, handling of properties from USB
@@ -503,12 +504,13 @@ https://raw.githubusercontent.com/markseel/flexfx_kit/master/app_cabsim.mp4
 #include <math.h>   // Floating point for filter coeff calculations in the background process.
 #include <string.h>
 
-const char* company_name_string    = "FlexFX"; // Your company name
-const char* product_name_string    = "Cabsim"; // Your product name
-const int   audio_sample_rate      = 48000;    // Audio sampling frequency
-const int   usb_output_chan_count  = 2;        // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count   = 2;        // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count      = 2;        // ADC/DAC channels per SDIN/SDOUT wire
+const char* product_name_string    = "Example"; // Your company/product name
+const int   audio_sample_rate      = 48000;     // Audio sampling frequency
+const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
+const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
+const int   i2s_channel_count      = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char  interface_text[]       = "No interface is specified";
+const char  controller_app[]       = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
@@ -704,12 +706,13 @@ https://raw.githubusercontent.com/markseel/flexfx_kit/master/app_chorus.mp4
 #include <math.h>   // Floating point for filter coeff calculations in the background process.
 #include <string.h>
 
-const char* company_name_string    = "FlexFX";  // Your company name
-const char* product_name_string    = "Chorus";  // Your product name
+const char* product_name_string    = "Example"; // Your company/product name
 const int   audio_sample_rate      = 48000;     // Audio sampling frequency
 const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
 const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
 const int   i2s_channel_count      = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char  interface_text[]       = "No interface is specified";
+const char  controller_app[]       = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
@@ -811,12 +814,13 @@ aliasing of harmonics created from the nonlinear behavior of the preamp.
 #include <math.h>
 #include <string.h>
 
-const char* company_name_string    = "FlexFX";    // Your company name
-const char* product_name_string    = "Overdrive"; // Your product name
-const int   audio_sample_rate      = 192000;      // Audio sampling frequency
-const int   usb_output_chan_count  = 2;           // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count   = 2;           // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count      = 2;           // ADC/DAC channels per SDIN/SDOUT wire
+const char* product_name_string    = "Example"; // Your company/product name
+const int   audio_sample_rate      = 192000;    // Audio sampling frequency
+const int   usb_output_chan_count  = 2;         // 2 USB audio class 2.0 output channels
+const int   usb_input_chan_count   = 2;         // 2 USB audio class 2.0 input channels
+const int   i2s_channel_count      = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char  interface_text[]       = "No interface is specified";
+const char  controller_app[]       = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
@@ -973,3 +977,265 @@ void dsp_thread5( int* samples, const int* property ) // Downsample
                  dsp_fir_filt( samples[1], antialias_coeff, antialias_state2, 64 );
 }
 ```
+Example Application #4 - Reverb
+----------------------------------
+
+Reverb example implemting a port of the FreeVerb algorithm based on the Schroeder-Moorer reverberation model.  A nice improvement would be to use a potentiometer (sensed via an ADC attached via I2C in the 'control' function) to select the reverb type.  The potentiometer code would perhaps generate a value of 1 through 9 depending on the pot's rotation setting.  The value would then be used to select the reverb's wet/dry mix, stereo width, room size, and room reflection/damping.  Note that there's plenty of processing power left over to implement other algorithms along with this reverb such as graphic EQ's, flanger/chorus, etc.
+
+```C
+#include "flexfx.h"
+#include <math.h>
+#include <string.h>
+
+const char* product_name_string   = "Example"; // Your company/product name
+const int   audio_sample_rate     = 48000;     // Audio sampling frequency
+const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
+const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
+const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char  interface_string[]    = "No interface is specified";
+const char  controller_string[]   = "No controller is available";
+
+const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
+
+void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+{
+    // If outgoing USB or DSP properties are still use then come back later ...
+    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
+}
+
+void mixer( const int* usb_output, int* usb_input,
+            const int* i2s_output, int* i2s_input,
+            const int* dsp_output, int* dsp_input, const int* property )
+{
+    // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
+    int guitar_in = i2s_output[0] - i2s_output[1];
+    // Route instrument input to the left USB input and to the DSP input.
+    dsp_input[0] = (usb_input[0] = guitar_in) / 8; // DSP samples need to be Q28 formatted.
+    // Route DSP result to the right USB input and the audio DAC.
+    usb_input[1] = i2s_input[0] = i2s_input[1] = dsp_output[0] * 8; // Q28 to Q31
+}
+
+int _comb_bufferL   [8][2048], _comb_bufferR   [8][2048]; // Delay lines for comb filters
+int _comb_stateL    [8],       _comb_stateR    [8];       // Comb filter state (previous value)
+int _allpass_bufferL[4][1024], _allpass_bufferR[4][1024]; // Delay lines for allpass filters
+
+int _allpass_feedbk    = FQ(0.5); // Reflection decay/dispersion
+int _stereo_spread     = 23;      // Buffer index spread for stereo separation
+int _comb_delays   [8] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 }; // From FreeVerb
+int _allpass_delays[8] = { 556, 441, 341, 225 }; // From FreeVerb
+
+int _wet_dry_blend  = FQ(0.2); // Parameter: Wet/dry mix setting (0.0=dry)
+int _stereo_width   = FQ(0.2); // Parameter: Stereo width setting
+int _comb_damping   = FQ(0.2); // Parameter: Reflection damping factor (aka 'reflectivity')
+int _comb_feedbk    = FQ(0.2); // Parameter: Reflection feedback ratio (aka 'room size')
+
+void dsp_initialize( void ) // Called once upon boot-up.
+{
+    memset( _comb_bufferL, 0, sizeof(_comb_bufferL) );
+    memset( _comb_stateL,  0, sizeof(_comb_stateL) );
+    memset( _comb_bufferR, 0, sizeof(_comb_bufferR) );
+    memset( _comb_stateR,  0, sizeof(_comb_stateR) );
+}
+
+inline int _comb_filterL( int xx, int ii, int nn ) // yy[k] = xx[k] + g1*xx[k-M1] - g2*yy[k-M2]
+{
+    ii = (_comb_delays[nn] + ii) & 2047; // Index into sample delay FIFO
+    int yy = _comb_bufferL[nn][ii];
+    _comb_stateL[nn] = dsp_multiply( yy, FQ(1.0) - _comb_damping )
+                     + dsp_multiply( _comb_stateL[nn], _comb_damping );
+    _comb_bufferL[nn][ii] = xx + dsp_multiply( _comb_stateL[nn], _comb_feedbk );
+    return yy;
+}
+
+inline int _comb_filterR( int xx, int ii, int nn ) // yy[k] = xx[k] + g1*xx[k-M1] - g2*yy[k-M2]
+{
+    ii = (_comb_delays[nn] + ii + _stereo_spread) & 2047; // Index into sample delay FIFO
+    int yy = _comb_bufferR[nn][ii];
+    _comb_stateR[nn] = dsp_multiply( yy, FQ(1.0) - _comb_damping )
+                     + dsp_multiply( _comb_stateR[nn], _comb_damping );
+    _comb_bufferR[nn][ii] = xx + dsp_multiply( _comb_stateR[nn], _comb_feedbk );
+    return yy;
+}
+
+inline int _allpass_filterL( int xx, int ii, int nn ) // yy[k] = xx[k] + g * xx[k-M] - g * xx[k]
+{
+    ii = (_allpass_delays[nn] + ii) & 1023; // Index into sample delay FIFO
+    int yy = _allpass_bufferL[nn][ii] - xx;
+    _allpass_bufferL[nn][ii] = xx + dsp_multiply( _allpass_bufferL[nn][ii], _allpass_feedbk );
+    return yy;
+}
+
+inline int _allpass_filterR( int xx, int ii, int nn ) // yy[k] = xx[k] + g * xx[k-M] - g * xx[k]
+{
+    ii = (_allpass_delays[nn] + ii + _stereo_spread) & 1023; // Index into sample delay FIFO
+    int yy = _allpass_bufferR[nn][ii] - xx;
+    _allpass_bufferR[nn][ii] = xx + dsp_multiply( _allpass_bufferR[nn][ii], _allpass_feedbk );
+    return yy;
+}
+
+void dsp_thread1( int* samples, const int* property )
+{
+    // ----- Left channel reverb
+    static int index = 0; ++index; // Used to index into the sample FIFO delay buffer
+    // Eight parallel comb filters ...
+    samples[2] = _comb_filterL( samples[0]/8, index, 0 ) + _comb_filterL( samples[0]/8, index, 1 )
+               + _comb_filterL( samples[0]/8, index, 2 ) + _comb_filterL( samples[0]/8, index, 3 )
+               + _comb_filterL( samples[0]/8, index, 4 ) + _comb_filterL( samples[0]/8, index, 5 )
+               + _comb_filterL( samples[0]/8, index, 6 ) + _comb_filterL( samples[0]/8, index, 7 );
+    // Four series all-pass filters ...
+    samples[2] = _allpass_filterL( samples[2], index, 0 );
+    samples[2] = _allpass_filterL( samples[2], index, 1 );
+    samples[2] = _allpass_filterL( samples[2], index, 2 );
+    samples[2] = _allpass_filterL( samples[2], index, 3 );
+}
+
+void dsp_thread2( int* samples, const int* property )
+{
+    // ----- Right channel reverb
+    static int index = 0; ++index; // Used to index into the sample FIFO delay buffer
+    // Eight parallel comb filters ...
+    samples[1] = _comb_filterR( samples[0]/8, index, 0 ) + _comb_filterR( samples[0]/8, index, 1 )
+               + _comb_filterR( samples[0]/8, index, 2 ) + _comb_filterR( samples[0]/8, index, 3 )
+               + _comb_filterR( samples[0]/8, index, 4 ) + _comb_filterR( samples[0]/8, index, 5 )
+               + _comb_filterR( samples[0]/8, index, 6 ) + _comb_filterR( samples[0]/8, index, 7 );
+    // Four series all-pass filters ...
+    samples[3] = _allpass_filterR( samples[3], index, 0 );
+    samples[3] = _allpass_filterR( samples[3], index, 1 );
+    samples[3] = _allpass_filterR( samples[3], index, 2 );
+    samples[3] = _allpass_filterR( samples[3], index, 3 );
+}
+
+void dsp_thread3( int* samples, const int* property )
+{
+    // Final mixing and stereo synthesis
+    int dry = _wet_dry_blend, wet = FQ(1.0) - _wet_dry_blend;
+    // Coefficients for stereo separation
+    int wet1 = _stereo_width / 2 + 0.5;
+    int wet2 = (FQ(1.0) - _stereo_width) / 2;
+    // Final mixing and stereo separation for left channel
+    samples[0] = dsp_multiply( dry, samples[0] )
+               + dsp_multiply( wet, dsp_multiply( samples[2], wet1 ) +
+                                    dsp_multiply( samples[3], wet2 ) );
+    // Final mixing and stereo separation for right channel
+    samples[1] = dsp_multiply( dry, samples[1] )
+               + dsp_multiply( wet, dsp_multiply( samples[2], wet2 ) +
+                                    dsp_multiply( samples[3], wet1 ) );
+}
+
+void dsp_thread4( int* samples, const int* property )
+{
+}
+
+void dsp_thread5( int* samples, const int* property )
+{
+}
+```
+
+Prebuilt Effects
+----------------------------------
+The FlexFX kit contains some highly optimized effects. These effects are in binary form and can be used for free on FlexFX boards. Here's an example of how to use the optimzied stereo Cabinet simulator that supports 37.5 msec of IR processing in stereo mode at 48 kHz, and 75 msec of IR processing in mono mode at 48 kHz.
+
+The FlexFX properties definitions for uploading IR data (stored in wave files on a USB atteched host computer) is documented in 'efx_cabsim.txt' and is also available via USB MIDI by issueing the FlexFX USB/MIDI property for returning a device's MIDI interface (the text is returned via USB).  
+
+This effect also supports the HTML5 interface for controlling the device (firmware upgrading, uploading IR data, etc). The javascript code for the effect is returned via USB MIDI by issueing the FlexFX USB/MIDI property for returning a device's javascript controller interface.  The HTML5 application called 'flexfx.html' does this automatically and will displayt this device's GUI interface if the device is pluuged into the host computer via a USB cable. Google Chrome must be used.
+
+```
+#include "efx_cabsim.h"
+
+const char* product_name_string = "FlexFX Cabsim";  // Your company/product name
+
+void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+{
+    efx_cabsim__control( rcv_prop, usb_prop, dsp_prop );
+}
+
+void mixer( const int* usb_output, int* usb_input,
+            const int* i2s_output, int* i2s_input,
+            const int* dsp_output, int* dsp_input, const int* property )
+{
+    efx_cabsim__mixer( usb_output, usb_input, i2s_output, i2s_input,
+                       dsp_output, dsp_input, property );
+}
+
+void dsp_thread1( int* samples, const int* property ) {efx_cabsim__dsp_thread1(samples,property);}
+void dsp_thread2( int* samples, const int* property ) {efx_cabsim__dsp_thread2(samples,property);}
+void dsp_thread3( int* samples, const int* property ) {efx_cabsim__dsp_thread3(samples,property);}
+void dsp_thread4( int* samples, const int* property ) {efx_cabsim__dsp_thread4(samples,property);}
+void dsp_thread5( int* samples, const int* property ) {efx_cabsim__dsp_thread5(samples,property);}
+```
+
+Discovery and Control
+----------------------------
+All USB MIDI data flow between a host computer and FlexFX devices occurs via FlexFX properties (see 'Run-time' Control above). FlexFX devices, including the optimized prebuilt effects (see 'Prebuilt Effects' above), support a discovery process whereby any host computer can querry a FlexFX device for both its MIDI interface and its Javascript control code via a FlexFX property.
+
+The FlexFx property interface data, returned in a human readable text) is returned via USB MIDI if the device receives FlexFX properties with ID's of 0x21 (begin), 0x22 (next), and 0x23 (end). The returned text can be used to provide additonal FlexFX property definitions for device specific (or effect specific) control. This textual data is automatically included in the FlexFX firmware image (see 'Development Steps' above) if a .txt file with the same name as the effect being built exists (e.g. efx_cabsim.txt for efx_cabsim.c firmware).
+
+Here's an example of a textual property interface definition for the 'efx_cabsim' effect:
+
+```
+# FLEXFX STEREO CABSIM
+#
+# Stereo Cabinet Simulator using impulse responses. Impulse responses to upload
+# must be stored in a wave file (RIFF/WAV format) and have a sampling frequency
+# of 48 kHz. Both mono and stereo source data is supported.  Stereo can also be
+# employed by specifying two mono WAV files.
+#
+# PROPERTY   DIRECTION        DESCRIPTION
+# 00000011   Bidirectional    Begin firmware upgrade, echoed back to host
+# 00000012   Bidirectional    Next 40 bytes of firmware image data, echoed
+# 00000013   Bidirectional    End firmware upgrade, echoed back to host
+# 00000021   Host to Device   Start dumping the text in this file
+# 00000022   Device to Host   Next 40 bytes of property interface text
+# 00000023   Device to Host   End of property interface text dump
+# 00000031   Host to Device   Start a controller javascript code dump
+# 00000032   Device to Host   Next 40 bytes of javascript code text
+# 00000033   Device to Host   End of controller javascript code text
+#
+# PROPERTY   DIRECTION        DESCRIPTION
+# 00008000   Host to Device   List all control (knobs,buttons) and preset data
+# 00008001   Bidirectional    Update all controls (overrides physical controls)
+# 00008n01   Bidirectional    Up to 20 charactr name for preset N (1<=N<=9)
+# 00008n02   Bidirectional    Begin data upload for preset N, begin upload ACK
+# 00008n03   Bidirectional    Five IR data words for preset N or echoed data
+# 00008n04   Bidirectional    End data upload for preset N or end upload ACK
+# 00008n05   Bidirectional    First 20 chars of data file name for preset N
+# 00008n06   Bidirectional    Next 20 chars of data file name for preset N
+# 00008n07   Bidirectional    Last 20 chars of data file name for preset N
+#
+# PROPERTY LAYOUT for control (knobs, pushbuttons, etc) Values shown are 32-bit
+# values represented in ASCII/HEX format or as floating point values ranging
+# from +0.0 up to (not including) +1.0.
+#
+# +------- Effect identifier
+# |
+# |        +-------------------------------- Volume level
+# |        |     +-------------------------- Tone setting
+# |        |     |     +-------------------- Reserved
+# |        |     |     |     +-------------- Reserved
+# |        |     |     |     |     +-------- Preset selection (1 through 9)
+# |        |     |     |     |     |+------- Enabled (1=yes,0=bypassed)
+# |        |     |     |     |     ||+------ InputL  (1=plugged,0=unplugged)
+# |        |     |     |     |     |||+----- OutputL (1=plugged,0=unplugged)
+# |        |     |     |     |     ||||+---- InputR  (1=plugged,0=unplugged)
+# |        |     |     |     |     |||||+--- OutputR (1=plugged,0=unplugged)
+# |        |     |     |     |     ||||||+-- Expression (1=plugged,0=unplugged)
+# |        |     |     |     |     |||||||+- USB Audio (1=active)
+# |        |     |     |     |     ||||||||
+# 00008001 0.500 0.500 0.500 0.500 91111111
+#
+# PROPERTY LAYOUT for preset data loading (loading IR data). Values shown are
+# 32-bit values represented in ASCII/HEX format.
+#
+# +---------- Effect identifier
+# |
+# |    +--- Preset number (1 through 9)
+# |    |
+# 00008n02 0 0 0 0 0 # Begin IR data loading for preset N
+# 00008n03 A B C D E # Five of the next IR data words to load into preset N
+# 00008n04 0 0 0 0 0 # End IR data loading for preset N
+```
+
+The FlexFX HTML5 control javascript source code is returned via USB MIDI if the device receives FlexFX properties with ID's of 0x31 (begin), 0x32 (next), and 0x33 (end). The returned code can be used in HTML5 applications to access and control FlexFX devices via HTML MIDI whoch is supported by Google Chrome. The HTML5 application called 'flexfx.html' will sense USB MIDI events, including the plugging and unplugging of FlexFX devices, querry the device for its javascript controller code, and display the device's GUI interface on a webpage. This javascript codeis automatically included in the FlexFX firmware image (see 'Development Steps' above) if a .js file with the same name as the effect being built exists (e.g. efx_cabsim.js for efx_cabsim.c firmware).
+
+Here's an example of HTML5 controller for the 'efx_cabsim' effect:
+![alt tag](https://raw.githubusercontent.com/markseel/flexfx_kit/master/efx_cabsim.png)
