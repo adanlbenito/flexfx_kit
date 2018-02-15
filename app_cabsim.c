@@ -7,6 +7,8 @@ const int   audio_sample_rate     = 48000;     // Audio sampling frequency
 const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
 const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
 const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char  interface_string[]    = "No interface is specified";
+const char  controller_string[]   = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
@@ -35,7 +37,6 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     {
         copy_prop( dsp_prop, rcv_prop ); // Send to DSP threads.
         copy_prop( usb_prop, rcv_prop ); // Send to USB host as an acknowledge and for flow-control.
-        rcv_prop[0] = 0; // Mark the incoming USB property as consumed (allow RX of the next prop).
     }
 }
 

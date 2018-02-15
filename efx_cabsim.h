@@ -1,3 +1,5 @@
+#include "flexfx.h"
+
 #define PROP_CABSIM_OUTPUT   0x33020001 // Out Volume L, Out Volume R, 0, 0, 0
 #define PROP_CABSIM_IR_BEG   0x33020002 // Start IR loading
 #define PROP_CABSIM_IR_DATA  0x33020003 // Load five IR samples
