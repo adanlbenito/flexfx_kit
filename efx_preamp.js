@@ -1,10 +1,6 @@
 function flexfx_create( tag )
 {
     var x = "";
-    x += "<div class='row'><div class='column' style='margin-top:3%'>";
-    x += "<h4>FLEXFX - PREAMP</h4>";
-
-    x += factory_create(tag);
 
     x += "<p>Three-stage tube preamp. Each stage implements a triode preamp model. The three stages are followed by a grapic EQ.</p>";
 
@@ -32,14 +28,11 @@ function flexfx_create( tag )
     x += "</td>"; } x += "</tr>"; }
     x += "</tbody></table>";
 
-    x += "</div></div>";
     return x;
 }
 
 function flexfx_initialize( tag )
 {
-    factory_initialize( tag );
-
     for( var preset = 1; preset <= 9; ++preset ) {
         $(tag+"_presetA"+preset).onclick = _on_preamp_select;
         $(tag+"_presetB"+preset).onclick = _on_preamp_select;

@@ -2,15 +2,19 @@
 #include <math.h>
 #include <string.h>
 
-const char* product_name_string   = "FlexFX Example"; // Your company/product name
-const int   audio_sample_rate     = 48000;     // Audio sampling frequency
-const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
-const char  interface_string[]    = "No interface is specified";
-const char  controller_string[]   = "No controller is available";
+const char* company_name_string   = "FlexFX";  // Your company name
+const char* product_name_string   = "Example"; // Your product name
+const char* usb_audio_output_name = "FlexFX Audio Output"; // USB audio output endpoint name
+const char* usb_audio_input_name  = "FlexFX Audio In put"; // USB audio input endpoint name
+const char* usb_midi_output_name  = "FlexFX MIDI Output";  // USB MIDI output endpoint name
+const char* usb_midi_input_name   = "FlexFX MIDI In put";  // USB MIDI input endpoint name
 
-const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
+const int audio_sample_rate     = 48000; // Audio sampling frequency
+const int usb_output_chan_count = 2;     // 2 USB audio class 2.0 output channels
+const int usb_input_chan_count  = 2;     // 2 USB audio class 2.0 input channels
+const int i2s_channel_count     = 2;     // ADC/DAC channels per SDIN/SDOUT wire
+
+const int i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
 #define PROP_PRODUCT_ID      0x0101                  // Your product ID, must not be 0x0000!
 #define PROP_EXAMPLE_PROPS   (PROP_PRODUCT_ID << 16) // Base property ID value
@@ -38,6 +42,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
         copy_prop( dsp_prop, rcv_prop ); // Send to DSP threads.
         copy_prop( usb_prop, rcv_prop ); // Send to USB host as an acknowledge and for flow-control.
     }
+    rcv_prop[0] = 0; // Mark incoming properties as 'consumed'.
 }
 
 void mixer( const int* usb_output, int* usb_input,

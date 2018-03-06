@@ -1,11 +1,21 @@
 #include "efx_cabsim.h"
 
-const char* product_name_string   = "FlexFX Cabsim";  // Your company/product name
-const int   audio_sample_rate     = 48000;     // Audio sampling frequency
-const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
-const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
+const char* company_name_string   = "FlexFX"; // Your company name
+const char* product_name_string   = "Cabsim"; // Your product name
+const char* usb_audio_output_name = "FlexFX Audio Output"; // USB audio output endpoint name
+const char* usb_audio_input_name  = "FlexFX Audio In put"; // USB audio input endpoint name
+const char* usb_midi_output_name  = "FlexFX MIDI Output";  // USB MIDI output endpoint name
+const char* usb_midi_input_name   = "FlexFX MIDI In put";  // USB MIDI input endpoint name
+
+const int audio_sample_rate     = 48000; // Audio sampling frequency
+const int usb_output_chan_count = 2;     // 2 USB audio class 2.0 output channels
+const int usb_input_chan_count  = 2;     // 2 USB audio class 2.0 input channels
+const int i2s_channel_count     = 2;     // ADC/DAC channels per SDIN/SDOUT wire
+
+//const char interface_string[]  = "No interface is specified";
+//const char controller_string[] = "No controller is available";
+
+const int i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
 static void adc_read( double values[4] ) // I2C control for the Analog Devices AD7999 ADC.
 {
@@ -23,10 +33,13 @@ static void adc_read( double values[4] ) // I2C control for the Analog Devices A
 
 void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
-    // If a property arrived then pass it on to cabsim control and return, otherwise if
-    // no incoming properties arrived then we can create our own if appriopriate ...
+    // Pass incoming properties on to CABSIM control ...
+    efx_cabsim__control( rcv_prop, usb_prop, dsp_prop );
+    // If outgoing USB or DSP properties are still use then come back later ...
+    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
 
-    if( rcv_prop[0] != 0 ) { efx_cabsim__control( rcv_prop, usb_prop, dsp_prop ); return; }
+    // If outgoing USB or DSP properties are now use then come back later ...
+    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
 
     double volume = 0, tone = 0, preset = 0, pot_values[4];
     adc_read( pot_values ); // Read pot values for volume, tone and preset
@@ -35,7 +48,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     int updated[3] = {0,0,0};
     updated[0] = (pot_values[3] < volume-FQ(0.01)) || (pot_values[3] > volume+FQ(0.01));
     updated[1] = (pot_values[2] < tone-FQ(0.01)) || (pot_values[2] > tone+FQ(0.01));
-    static int focus = 0,click; double step = FQ(0.1111111), gap = QF(0.03);
+    static int focus = 0; double step = FQ(0.1111111), gap = QF(0.03);
     for( int click = 0, ii = 0; ii < 9; ++ii ) {
         click = preset >= (ii*step+gap) && preset <= (ii*(step+1)-gap);
         if( !click && focus ) focus = 0;

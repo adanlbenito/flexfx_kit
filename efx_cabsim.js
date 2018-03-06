@@ -1,10 +1,6 @@
 function flexfx_create( tag )
 {
     var x = "";
-    x += "<div class='row'><div class='column' style='margin-top:3%'>";
-    x += "<h4>FLEXFX - CABSIM</h4>";
-
-    x += factory_create(tag);
 
     x += "<p>";
     x += "Stereo Cabinet Simulator using impulse responses. Impulse responses to upload must be ";
@@ -28,17 +24,11 @@ function flexfx_create( tag )
     x += "</div></td>"; x += "</tr>"; }
     x += "</tbody></table>";
 
-    x += "</div></div>";
     return x;
 }
 
 function flexfx_initialize( tag )
 {
-    factory_initialize( tag );
-
-    for (var i=1;i<=4;++i) $(tag+"_button"+i).onclick = _on_factory_button;
-    for (var i=1;i<=4;++i) $(tag+"_input"+i).onchange = _on_factory_input;
-
     for( var i = 1; i <= 9; ++i )
     {
         $(tag+"_preset"+i).onclick     = _on_cabsim_select;

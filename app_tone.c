@@ -2,13 +2,19 @@
 #include <math.h>
 #include <string.h>
 
-const char* product_name_string   = "FlexFX Example"; // Your company/product name
-const int   audio_sample_rate     = 48000;     // Audio sampling frequency
-const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
+const char* company_name_string   = "FlexFX";  // Your company name
+const char* product_name_string   = "Example"; // Your product name
+const char* usb_audio_output_name = "FlexFX Audio Output"; // USB audio output endpoint name
+const char* usb_audio_input_name  = "FlexFX Audio In put"; // USB audio input endpoint name
+const char* usb_midi_output_name  = "FlexFX MIDI Output";  // USB MIDI output endpoint name
+const char* usb_midi_input_name   = "FlexFX MIDI In put";  // USB MIDI input endpoint name
 
-const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
+const int audio_sample_rate     = 48000; // Audio sampling frequency
+const int usb_output_chan_count = 2;     // 2 USB audio class 2.0 output channels
+const int usb_input_chan_count  = 2;     // 2 USB audio class 2.0 input channels
+const int i2s_channel_count     = 2;     // ADC/DAC channels per SDIN/SDOUT wire
+
+const int i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
 #define PROP_PRODUCT_ID      (0x0101)                // Your product ID, must not be 0x0000!
 #define PROP_EXAMPLE_PROPS   (PROP_PRODUCT_ID << 16) // Base property ID value
@@ -16,7 +22,7 @@ const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCL
 #define PROP_EXAMPLE_MIDDLE  (PROP_EXAMPLE_PROPS+2)  // Coeffs, prop[1:5]=[B0,B1,B2,A1,A2]
 #define PROP_EXAMPLE_TREBLE  (PROP_EXAMPLE_PROPS+3)  // Coeffs, prop[1:5]=[B0,B1,B2,A1,A2]
 
-static void adc_read( double values[4] )
+static void read_adc( double values[4] )
 {
     byte ii, hi, lo, value;
     i2c_start( 100000 ); // Set bit clock to 400 kHz and assert start condition.
@@ -37,7 +43,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     // If outgoing USB or DSP properties are still use then come back later ...
     if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
 
-    double pot_values[4]; adc_read( pot_values );
+    double pot_values[4]; read_adc( pot_values );
     double bass = pot_values[2], middle = pot_values[1], treble = pot_values[0];
 
     // Compute bass coefficients and send them to DSP threads.
@@ -61,6 +67,7 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
         dsp_prop[0] = PROP_EXAMPLE_TREBLE; // Compute coefficients and populate property.
         calc_highshelf( dsp_prop+1, 10000.0, 0.707, gain ); // Treble corner freq = 10000 Hz.
     }
+    rcv_prop[0] = 0; // Mark incoming properties as 'consumed'.
 }
 
 void mixer( const int* usb_output, int* usb_input,

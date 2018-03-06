@@ -1,17 +1,18 @@
 import sys, os
 
 source = ""
-name = sys.argv[1];
+name1 = sys.argv[1];
+name2 = sys.argv[2];
 
 try:
-    file = open( name+".txt", "rt" )
+    file = open( name1, "rt" )
     source += "const char interface_string[] = \""
     source += file.read().encode("hex")
     source += "\";\n"
 except: file  = None
 
 try:
-    file = open( name+".js", "rt" )
+    file = open( name2, "rt" )
     source += "const char controller_string[] = \""
     source += file.read().encode("hex")
     source += "\";\n"

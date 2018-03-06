@@ -1,0 +1,21 @@
+# FLEXFX Common Property Interface
+#
+# These properties are common to all FlexFX applications.
+#
+# PROP ID   DIRECTION        DESCRIPTION
+# 0000      Bidirectional    Echo the property values back to the host
+# 0001      Bidirectional    Query/return the platform signature (3degFlex)
+# 0002      Bidirectional    Query/return the device company name
+# 0003      Bidirectional    Query/return the device product name
+# 0004      Bidirectional    Query/return the device product version/codes
+# 0005      Bidirectional    Begin firmware upgrade, echoed back to host
+# 0006      Bidirectional    Next 40 bytes of firmware image data, echoed
+# 0007      Bidirectional    End firmware upgrade, echoed back to host
+# 0008      Host to Device   Start dumping the text in this file
+# 0009      Device to Host   Next 40 bytes of property interface text
+# 000A      Device to Host   End of property interface text dump
+# 000B      Host to Device   Start a controller javascript code dump
+# 000C      Device to Host   Next 40 bytes of javascript code text
+# 000D      Device to Host   End of controller javascript code text
+# 000E      Bidirectional    Query/return DSP thread run-time (audio cycles)
+# 000F      Bidirectional    Force device reset (not needed after FW upgrade)
