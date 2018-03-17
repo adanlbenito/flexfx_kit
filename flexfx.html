@@ -7,7 +7,6 @@
   <title>FlexFX Controller</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="flexfx.css">
 </head>
 
 <body><div class='container' id='controller'>
@@ -72,10 +71,10 @@ function _load_controller( tag, script_text )
     x += "<h4 id='"+tag+"_title'>" + _company_name + " - " + _product_name + "</h4>";
 
     x += "<table class='flexfx'><tbody><tr>";
-    x += "<td><input type='file' style='display:none' id='"+tag+"_input1'/><button id='"+tag+"_button1'>Export Presets</button></td>";
-    x += "<td><input type='file' style='display:none' id='"+tag+"_input2'/><button id='"+tag+"_button2'>Import Presets</button></td>";
-    x += "<td><input type='file' style='display:none' id='"+tag+"_input3'/><button id='"+tag+"_button3'>Load Firmware</button></td>";
+    //x += "<td><input type='file' style='display:none' id='"+tag+"_input1'/><button id='"+tag+"_button1'>Export Presets</button></td>";
+    //x += "<td><input type='file' style='display:none' id='"+tag+"_input2'/><button id='"+tag+"_button2'>Import Presets</button></td>";
     x += "<td><input type='file' style='display:none' id='"+tag+"_input4'/><button id='"+tag+"_button4'>Show Properties</button></td>";
+    x += "<td><input type='file' style='display:none' id='"+tag+"_input3'/><button id='"+tag+"_button3'>Load Firmware</button></td>";
     x += "</tr></tbody></table>";
 
     x += flexfx_create( tag );
@@ -83,8 +82,8 @@ function _load_controller( tag, script_text )
 
     $(tag).innerHTML = x
 
-    for (var i=1;i<=4;++i) $(tag+"_button"+i).onclick = _on_factory_button;
-    for (var i=1;i<=4;++i) $(tag+"_input"+i).onchange = _on_factory_input;
+    for (var i=3;i<=4;++i) $(tag+"_button"+i).onclick = _on_factory_button;
+    for (var i=3;i<=4;++i) $(tag+"_input"+i).onchange = _on_factory_input;
 
     flexfx_initialize( tag );
 }
@@ -160,6 +159,8 @@ function _on_midi_connect( event )
 
     var prev_midi_input_ports  = Object.assign({},_midi_input_ports);
     var prev_midi_output_ports = Object.assign({},_midi_output_ports);
+    
+    var tag2 = 0;
 
     _midi_input_ports = {}; _midi_output_ports = {};
 
@@ -192,6 +193,7 @@ function _on_midi_connect( event )
         if( !(tag in prev_midi_input_ports) ) {
             var port = _midi_input_ports[tag];
             port.onmidimessage = _on_midi_message;
+            tag2 = tag;
     }}
     for( var tag in _midi_output_ports ) {
         if( !(tag in prev_midi_output_ports) ) {
@@ -215,7 +217,7 @@ function _on_midi_message( event )
     }
     var tag2 = _midi_io_pairing_map[tag];
 
-    if( property[0] == 1 )
+    if( property[0] == 1 ) // Begin Dump of controller javascript
     {
         _midi_output_ports[tag2].send( flexfx_property_to_midi( [2,0,0,0,0,0] ));
     }
@@ -254,13 +256,15 @@ function _on_midi_message( event )
         text += String.fromCharCode( property[4]>>24, (property[4]>>16)&255, (property[4]>>8)&255, property[4]&255 );
         text += String.fromCharCode( property[5]>>24, (property[5]>>16)&255, (property[5]>>8)&255, property[5]&255 );
         _interface_text += text;
+        console.log(6)
         _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x22,0,0,0,0,0] ));
     }
     else if( property[0] == 0x23 ) // End Dump
     {
+        console.log(7)
         alert( _interface_text );
     }
-    else if( property[0] == 0x31 ) // Begin Dump of controller javascript
+    else if( property[0] == 0x31 ) // Begin firmware upgrade
     {
         _controller_script = "";
         _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x32,0,0,0,0,0] ));
@@ -277,6 +281,10 @@ function _on_midi_message( event )
     }
     else if( property[0] == 0x33 ) // End Dump
     {
+        //console.log(_controller_script.length)
+        if( _controller_script.length < 100 ) {
+        	_controller_script = 'function flexfx_create( tag ) {return "";} function flexfx_initialize(tag){return _on_property_received;} function _on_property_received(property){} function _on_firmware_status(status){}';
+        }
         _load_controller( tag2, _controller_script );
     }
 }
@@ -324,8 +332,8 @@ function array_to_ui4le(a) { return a[0]+256*a[1]+65536*a[2]+16777216*a[3]; }
 
 function _flexfx_write_firmware_begin()
 {
-    $(_instance_tag+"_button1").disabled = true;
-    $(_instance_tag+"_button2").disabled = true;
+    //$(_instance_tag+"_button1").disabled = true;
+    //$(_instance_tag+"_button2").disabled = true;
     $(_instance_tag+"_button3").disabled = true;
     $(_instance_tag+"_button4").disabled = true;
     _load_count = 0;

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# ./build.sh app_cabsim.bin app_cabsim.c flexfx.txt flexfx.js
+# ./build.sh efx_cabsim.bin efx_cabsim.c efx_cabsim.txt efx_cabsim.js efx_cabsim.c.o
+
 echo Building strings ...
 
 #xxd -p $1.txt_ | tr -d '\n' > temp.hex
@@ -22,8 +25,8 @@ xud_client.xc.o xud_crc5_table.s.o xud_device_attach.xc.o xud_ep_funcs.s.o xud_e
 -o temp.xe
 
 echo Creating firmware image ...
-xflash --noinq --no-compression --factory-version 14.2 --upgrade 1 temp.xe -o $1
+xflash --noinq --no-compression --factory-version 14.3 --upgrade 1 temp.xe -o $1
 
 rm temp.xe 2> /dev/null
-rm strings.c 2> /dev/null
+#rm strings.c 2> /dev/null
 echo Done.
