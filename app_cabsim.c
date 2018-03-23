@@ -1,13 +1,12 @@
-#include "flexfx.h"
-#include <math.h>
-#include <string.h>
+#include "flexfx.h" // Defines config variables, I2C and GPIO functions, etc.
+#include <math.h>   // Floating point for filter coeff calculations in the background process.
+#include <string.h> // Memory and string functions
 
-const char* company_name_string   = "FlexFX";  // Your company name
-const char* product_name_string   = "Example"; // Your product name
-const char* usb_audio_output_name = "FlexFX Audio Output"; // USB audio output endpoint name
-const char* usb_audio_input_name  = "FlexFX Audio In put"; // USB audio input endpoint name
-const char* usb_midi_output_name  = "FlexFX MIDI Output";  // USB MIDI output endpoint name
-const char* usb_midi_input_name   = "FlexFX MIDI In put";  // USB MIDI input endpoint name
+const char* product_name_string   = "FlexFX Example";   // Your product name
+const char* usb_audio_output_name = "FlexFX Audio Out"; // USB audio output name
+const char* usb_audio_input_name  = "FlexFX Audio In";  // USB audio input name
+const char* usb_midi_output_name  = "FlexFX MIDI Out";  // USB MIDI output name
+const char* usb_midi_input_name   = "FlexFX MIDI In";   // USB MIDI input name
 
 const int audio_sample_rate     = 48000; // Audio sampling frequency
 const int usb_output_chan_count = 2;     // 2 USB audio class 2.0 output channels

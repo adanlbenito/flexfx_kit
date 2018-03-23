@@ -8,22 +8,22 @@
 # PROPERTIES SUMMARY
 #
 # PROP ID   DIRECTION        DESCRIPTION
-# 0000      Bidirectional    Echo the property values back to the host
-# 0001      Bidirectional    Query/return the platform signature (3degFlex)
-# 0002      Bidirectional    Query/return the device company name
-# 0003      Bidirectional    Query/return the device product name
-# 0004      Bidirectional    Query/return the device product version/codes
-# 0005      Bidirectional    Begin firmware upgrade, echoed back to host
-# 0006      Bidirectional    Next 40 bytes of firmware image data, echoed
-# 0007      Bidirectional    End firmware upgrade, echoed back to host
-# 0008      Host to Device   Start dumping the text in this file
-# 0009      Device to Host   Next 40 bytes of property interface text
-# 000A      Device to Host   End of property interface text dump
-# 000B      Host to Device   Start a controller javascript code dump
-# 000C      Device to Host   Next 40 bytes of javascript code text
-# 000D      Device to Host   End of controller javascript code text
-# 000E      Bidirectional    Query/return DSP thread run-time (audio cycles)
-# 000F      Bidirectional    Force device reset (not needed after FW upgrade)
+# 0001      Bidirectional    Return 3DEGFLEX, versions and props[4:5] to host
+# 0002      Bidirectional    Return the device product name (up to 40 bytes)
+# 0003      Device to Host   Start dumping the text in this file
+# 0004      Bidirectional    Next 40 bytes of property interface text
+# 0005      Host to Device   End of property interface text dump
+# 0006      Device to Host   Start a controller javascript code dump
+# 0007      Bidirectional    Next 40 bytes of javascript code text
+# 0008      Host to Device   End of controller javascript code text
+# 0009      Bidirectional    Begin firmware upgrade, echoed back to host
+# 000A      Bidirectional    Next 32 bytes of firmware image data, echoed
+# 000B      Bidirectional    End firmware upgrade, echoed back to host
+# 000C      Bidirectional    Begin flash user data load, echoed back to host
+# 000D      Bidirectional    Next 32 bytes of flash user data, echoed
+# 000E      Bidirectional    End flash data loading, echoed back to host
+# 000F      Bidirectional    Query/return DSP thread run-time (audio cycles)
+# PROP ID   DIRECTION        DESCRIPTION
 # 1000      Host to Device   List all control (knobs,buttons) and preset data
 # 1001      Bidirectional    Update all controls (overrides physical controls)
 # 1n01      Bidirectional    Up to 20 charactr name for preset N (1<=N<=9)

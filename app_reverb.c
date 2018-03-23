@@ -1,16 +1,17 @@
-#include "flexfx.h"
-#include <math.h>
-#include <string.h>
+#include "flexfx.h" // Defines config variables, I2C and GPIO functions, etc.
+#include <math.h>   // Floating point for filter coeff calculations in the background process.
+#include <string.h> // Memory and string functions
 
-const char* product_name_string   = "FlexFX Example"; // Your company/product name
-const int   audio_sample_rate     = 48000;     // Audio sampling frequency
-const int   usb_output_chan_count = 2;         // 2 USB audio class 2.0 output channels
-const int   usb_input_chan_count  = 2;         // 2 USB audio class 2.0 input channels
-const int   i2s_channel_count     = 2;         // ADC/DAC channels per SDIN/SDOUT wire
-const char  interface_string[]    = "No interface is specified";
-const char  controller_string[]   = "No controller is available";
+const char* product_name_string   = "FlexFX Example";   // Your product name
+const char* usb_audio_output_name = "FlexFX Audio Out"; // USB audio output name
+const char* usb_audio_input_name  = "FlexFX Audio In";  // USB audio input name
+const char* usb_midi_output_name  = "FlexFX MIDI Out";  // USB MIDI output name
+const char* usb_midi_input_name   = "FlexFX MIDI In";   // USB MIDI input name
 
-const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
+const int audio_sample_rate     = 48000; // Audio sampling frequency
+const int usb_output_chan_count = 2;     // 2 USB audio class 2.0 output channels
+const int usb_input_chan_count  = 2;     // 2 USB audio class 2.0 input channels
+const int i2s_channel_count     = 2;     // ADC/DAC channels per SDIN/SDOUT wire
 
 void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
