@@ -287,12 +287,8 @@ Burn to FLASH via USB ..... flexfx.py 0 your_application.bin
 Run-time Control
 ----------------------------------
 
-Audio processing code is controlled by properties.
-A property is composed of six 32-bit words where the first word is the property ID and the remaining five 32-bit words are property data.
-The most significant 16 bits of the property ID must be non-zero since zero values are used for burning FLASH memory with firmware image data.  The lower 16 bits can be of any value.
-Properties can be sent to and received from audio processing code by being encapsulated in MIDI SYSEX messages.
-The FlexFX SDK handles the USB MIDI and MIDI sysex rendering/parsing -
-the audio firmware only sees six 32-word properties and is not aware of USB MIDI and sysex rendering/parsing as this is handled by the FlexFX SDK.
+FlexFX applications can be controlled using FlexFX property exchanges via USB MIDI.
+A property is composed of a 16-bit IDC and five 32-bit data words for a total of 44 bytes of data.
 
 An example property is shown below:
 
@@ -305,8 +301,52 @@ Param 4     = 0x01234567
 Param 5     = 0x89abcdef
 ```
 
+Since FlexFX properties are transfered via MIDI the 44 bytes of data must be encapsulated withing a MIDI SYSEX message when
+parsing and rendering FlexFX properties on the USB host.
+The FlexFX framework handles parsing and rendering of MIDI SYSEX encapulated FlexFX data transfer therefore the user
+application need not deal with MIDi SYSEX. The FlexFX SDK handles the USB MIDI and MIDI sysex rendering/parsing -
+the audio firmware only sees 16-bit ID and five 32-word properties and is not aware of USB MIDI and sysex rendering/parsing as this is handled by the FlexFX SDK.
+
 For detailed information regarding the rendering/parsing process and MIDI SYSEX formatting see the 'flexfx.py' script
 that's used to send/receive properties to FlexFX applications via USB.
+
+FlexFX supports predeifned properties with the 16-bit ID being less than 0x1000.
+User defined properties should therefore use 16-bit ID's greater then or equal to 0x1000.
+
+```
+ID        DIRECTION        SUMMARY
+0001      Bidirectional    Return 3DEGFLEX, versions and props[4:5] to host
+0002      Bidirectional    Return the device product name (up to 40 bytes)
+0003      Device to Host   Start dumping the text in this file
+0004      Bidirectional    Next 40 bytes of property interface text
+0005      Host to Device   End of property interface text dump
+0006      Device to Host   Start a controller javascript code dump
+0007      Bidirectional    Next 40 bytes of javascript code text
+0008      Host to Device   End of controller javascript code text
+0009      Bidirectional    Begin firmware upgrade, echoed back to host
+000A      Bidirectional    Next 32 bytes of firmware image data, echoed
+000B      Bidirectional    End firmware upgrade, echoed back to host
+000C      Bidirectional    Begin flash user data load, echoed back to host
+000D      Bidirectional    Next 32 bytes of flash user data, echoed
+000E      Bidirectional    End flash data loading, echoed back to host
+000F      Bidirectional    Query/return DSP thread run-time (audio cycles)
+```
+
+#### FlexFX ID = 0x0001
+#### FlexFX ID = 0x0002
+#### FlexFX ID = 0x0003
+#### FlexFX ID = 0x0004
+#### FlexFX ID = 0x0005
+#### FlexFX ID = 0x0006
+#### FlexFX ID = 0x0007
+#### FlexFX ID = 0x0008
+#### FlexFX ID = 0x0009
+#### FlexFX ID = 0x000A
+#### FlexFX ID = 0x000B
+#### FlexFX ID = 0x000C
+#### FlexFX ID = 0x000D
+#### FlexFX ID = 0x000E
+#### FlexFX ID = 0x000F
 
 USB Host Application
 ----------------------------------
@@ -1170,69 +1210,75 @@ All USB MIDI data flow between a host computer and FlexFX devices occurs via Fle
 
 The FlexFx property interface data, returned in a human readable text) is returned via USB MIDI if the device receives FlexFX properties with ID's of 0x21 (begin), 0x22 (next), and 0x23 (end). The returned text can be used to provide additonal FlexFX property definitions for device specific (or effect specific) control. This textual data is automatically included in the FlexFX firmware image (see 'Development Steps' above) if a .txt file with the same name as the effect being built exists (e.g. efx_cabsim.txt for efx_cabsim.c firmware).
 
-Here's an example of a textual property interface definition for the 'efx_cabsim' effect:
+Here's an example of a textual property interface definition for the 'efx_cabsim' effect. Note that this exact text
+is returned upon issuing a FlexFX proeprty with ID = 0x0004 to the target FlexFX device.
 
 ```
-# FLEXFX STEREO CABSIM
+# FLEXFX STEREO CABSIM Property Interface
 #
 # Stereo Cabinet Simulator using impulse responses. Impulse responses to upload
 # must be stored in a wave file (RIFF/WAV format) and have a sampling frequency
 # of 48 kHz. Both mono and stereo source data is supported.  Stereo can also be
 # employed by specifying two mono WAV files.
 #
-# PROPERTY   DIRECTION        DESCRIPTION
-# 00000011   Bidirectional    Begin firmware upgrade, echoed back to host
-# 00000012   Bidirectional    Next 40 bytes of firmware image data, echoed
-# 00000013   Bidirectional    End firmware upgrade, echoed back to host
-# 00000021   Host to Device   Start dumping the text in this file
-# 00000022   Device to Host   Next 40 bytes of property interface text
-# 00000023   Device to Host   End of property interface text dump
-# 00000031   Host to Device   Start a controller javascript code dump
-# 00000032   Device to Host   Next 40 bytes of javascript code text
-# 00000033   Device to Host   End of controller javascript code text
+# PROP ID   DIRECTION        DESCRIPTION
+# 0001      Bidirectional    Return 3DEGFLEX, versions and props[4:5] to host
+# 0002      Bidirectional    Return the device product name (up to 40 bytes)
+# 0003      Device to Host   Start dumping the text in this file
+# 0004      Bidirectional    Next 40 bytes of property interface text
+# 0005      Host to Device   End of property interface text dump
+# 0006      Device to Host   Start a controller javascript code dump
+# 0007      Bidirectional    Next 40 bytes of javascript code text
+# 0008      Host to Device   End of controller javascript code text
+# 0009      Bidirectional    Begin firmware upgrade, echoed back to host
+# 000A      Bidirectional    Next 32 bytes of firmware image data, echoed
+# 000B      Bidirectional    End firmware upgrade, echoed back to host
+# 000C      Bidirectional    Begin flash user data load, echoed back to host
+# 000D      Bidirectional    Next 32 bytes of flash user data, echoed
+# 000E      Bidirectional    End flash data loading, echoed back to host
+# 000F      Bidirectional    Query/return DSP thread run-time (audio cycles)
+# PROP ID   DIRECTION        DESCRIPTION
+# 1000      Host to Device   Return volume,tone,preset control settings
+# 1001      Bidirectional    Update controls (overrides physical controls)
+# 1n01      Bidirectional    Up to 20 charactr name for preset N (1<=N<=9)
+# 1n02      Bidirectional    Begin data upload for preset N, begin upload ACK
+# 1n03      Bidirectional    Five IR data words for preset N or echoed data
+# 1n04      Bidirectional    End data upload for preset N or end upload ACK
+# 1n05      Bidirectional    First 20 chars of data file name for preset N
+# 1n06      Bidirectional    Next 20 chars of data file name for preset N
+# 1n07      Bidirectional    Last 20 chars of data file name for preset N
 #
-# PROPERTY   DIRECTION        DESCRIPTION
-# 00008000   Host to Device   List all control (knobs,buttons) and preset data
-# 00008001   Bidirectional    Update all controls (overrides physical controls)
-# 00008n01   Bidirectional    Up to 20 charactr name for preset N (1<=N<=9)
-# 00008n02   Bidirectional    Begin data upload for preset N, begin upload ACK
-# 00008n03   Bidirectional    Five IR data words for preset N or echoed data
-# 00008n04   Bidirectional    End data upload for preset N or end upload ACK
-# 00008n05   Bidirectional    First 20 chars of data file name for preset N
-# 00008n06   Bidirectional    Next 20 chars of data file name for preset N
-# 00008n07   Bidirectional    Last 20 chars of data file name for preset N
-#
-# PROPERTY LAYOUT for control (knobs, pushbuttons, etc) Values shown are 32-bit
+# Property layout for control (knobs, pushbuttons, etc) Values shown are 32-bit
 # values represented in ASCII/HEX format or as floating point values ranging
 # from +0.0 up to (not including) +1.0.
 #
-# +------- Effect identifier
+# +------- Effect parameter identifier (Property ID)
 # |
-# |        +-------------------------------- Volume level
-# |        |     +-------------------------- Tone setting
-# |        |     |     +-------------------- Reserved
-# |        |     |     |     +-------------- Reserved
-# |        |     |     |     |     +-------- Preset selection (1 through 9)
-# |        |     |     |     |     |+------- Enabled (1=yes,0=bypassed)
-# |        |     |     |     |     ||+------ InputL  (1=plugged,0=unplugged)
-# |        |     |     |     |     |||+----- OutputL (1=plugged,0=unplugged)
-# |        |     |     |     |     ||||+---- InputR  (1=plugged,0=unplugged)
-# |        |     |     |     |     |||||+--- OutputR (1=plugged,0=unplugged)
-# |        |     |     |     |     ||||||+-- Expression (1=plugged,0=unplugged)
-# |        |     |     |     |     |||||||+- USB Audio (1=active)
-# |        |     |     |     |     ||||||||
-# 00008001 0.500 0.500 0.500 0.500 91111111
+# |    +-------------------------------- Volume level
+# |    |     +-------------------------- Tone setting
+# |    |     |     +-------------------- Reserved
+# |    |     |     |     +-------------- Reserved
+# |    |     |     |     |     +-------- Preset selection (1 through 9)
+# |    |     |     |     |     |+------- Enabled (1=yes,0=bypassed)
+# |    |     |     |     |     ||+------ InputL  (1=plugged,0=unplugged)
+# |    |     |     |     |     |||+----- OutputL (1=plugged,0=unplugged)
+# |    |     |     |     |     ||||+---- InputR  (1=plugged,0=unplugged)
+# |    |     |     |     |     |||||+--- OutputR (1=plugged,0=unplugged)
+# |    |     |     |     |     ||||||+-- Expression (1=plugged,0=unplugged)
+# |    |     |     |     |     |||||||+- USB Audio (1=active)
+# |    |     |     |     |     ||||||||
+# 1001 0.500 0.500 0.500 0.500 91111111
 #
-# PROPERTY LAYOUT for preset data loading (loading IR data). Values shown are
+# Property layout for preset data loading (loading IR data). Values shown are
 # 32-bit values represented in ASCII/HEX format.
 #
-# +---------- Effect identifier
+# +---------- Effect parameter identifier (Property ID)
 # |
-# |    +--- Preset number (1 through 9)
-# |    |
-# 00008n02 0 0 0 0 0 # Begin IR data loading for preset N
-# 00008n03 A B C D E # Five of the next IR data words to load into preset N
-# 00008n04 0 0 0 0 0 # End IR data loading for preset N
+# |+--- Preset number (1 through 9)
+# ||
+# 1n02 0 0 0 0 0 # Begin IR data loading for preset N
+# 1n03 A B C D E # Five of the next IR data words to load into preset N
+# 1n04 0 0 0 0 0 # End IR data loading for preset N
 ```
 
 The FlexFX HTML5 control javascript source code is returned via USB MIDI if the device receives FlexFX properties with ID's of 0x31 (begin), 0x32 (next), and 0x33 (end). The returned code can be used in HTML5 applications to access and control FlexFX devices via HTML MIDI whoch is supported by Google Chrome. The HTML5 application called 'flexfx.html' will sense USB MIDI events, including the plugging and unplugging of FlexFX devices, querry the device for its javascript controller code, and display the device's GUI interface on a webpage. This javascript codeis automatically included in the FlexFX firmware image (see 'Development Steps' above) if a .js file with the same name as the effect being built exists (e.g. efx_cabsim.js for efx_cabsim.c firmware).
