@@ -17,10 +17,14 @@
 # 0009      Bidirectional    Begin firmware upgrade, echoed back to host
 # 000A      Bidirectional    Next 32 bytes of firmware image data, echoed
 # 000B      Bidirectional    End firmware upgrade, echoed back to host
-# 000C      Bidirectional    Begin flash user data load, echoed back to host
-# 000D      Bidirectional    Next 32 bytes of flash user data, echoed
-# 000E      Bidirectional    End flash data loading, echoed back to host
+# 000C      Bidirectional    Begin user data upload, echoed back to host
+# 000D      Bidirectional    Next 32 bytes of user data, echoed
+# 000E      Bidirectional    End user data uploading, echoed back to host
 # 000F      Bidirectional    Query/return DSP thread run-time (audio cycles)
+
+
+
+
 # PROP ID   DIRECTION        DESCRIPTION
 # 1000      Host to Device   Return volume,tone,preset control settings
 # 1001      Bidirectional    Update controls (overrides physical controls)

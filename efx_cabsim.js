@@ -1,30 +1,30 @@
 function flexfx_create( tag )
 {
-    var s = "";
+    var x = "";
 
-    s += "<p>";
-    s += "Stereo Cabinet Simulator using impulse responses. Impulse responses to upload must be ";
-    s += "stored in a wave file (RIFF/WAV format) and have a sampling frequency of 48 kHz. Both ";
-    s += "mono and stereo source data is supported. Stereo can also be employed by specifying two ";
-    s += "separate mono WAV files.";
-    s += "</p>";
-    s += "<table class='flexfx'>";
-    s += "<thead>";
-    s += "<tr><th>Preset</th><th>Left/Mono</th><th>Right/Stereo</th><th>File Name(s)</th></tr>";
-    s += "</thead>";
+    x += "<p>";
+    x += "Stereo Cabinet Simulator using impulse responses. Impulse responses to upload must be ";
+    x += "stored in a wave file (RIFF/WAV format) and have a sampling frequency of 48 kHz. Both ";
+    x += "mono and stereo source data is supported. Stereo can also be employed by specifying two ";
+    x += "separate mono WAV files.";
+    x += "</p>";
+    x += "<table class='flexfx'>";
+    x += "<thead>";
+    x += "<tr><th>Preset</th><th>Left/Mono</th><th>Right/Stereo</th><th>File Name(s)</th></tr>";
+    x += "</thead>";
 
-    s += "<tbody>";
+    x += "<tbody>";
     for( var p = 1; p <= 9; ++p ) {
-    s += "<tr><td class='preset' id='"+tag+"_preset"+p+"'>"+p+"</td>";
-    s += "<td><input type='file' style='display:none' id='"+tag+"_input"+p+"L'/><button id='"+tag+"_button"+p+"L'>Select IR</button></td>";
-    s += "<td><input type='file' style='display:none' id='"+tag+"_input"+p+"R'/><button id='"+tag+"_button"+p+"R'>Select IR</button></td>";
-    s += "<td><div style='display:inline-block'>";
-    s += "<div id='"+tag+"_text"+p+"L'>Celestion G12H Ann 152 Open Room.wav</div>";
-    s += "<div id='"+tag+"_text"+p+"R'>Celestion G12H Ann 152 Open Room.wav</div>";
-    s += "</div></td>"; s += "</tr>"; }
-    s += "</tbody></table>";
+    x += "<tr><td class='preset' id='"+tag+"_preset"+p+"'>"+p+"</td>";
+    x += "<td><input type='file' style='display:none' id='"+tag+"_input"+p+"L'/><button id='"+tag+"_button"+p+"L'>Select IR</button></td>";
+    x += "<td><input type='file' style='display:none' id='"+tag+"_input"+p+"R'/><button id='"+tag+"_button"+p+"R'>Select IR</button></td>";
+    x += "<td><div style='display:inline-block'>";
+    x += "<div id='"+tag+"_text"+p+"L'>Celestion G12H Ann 152 Open Room.wav</div>";
+    x += "<div id='"+tag+"_text"+p+"R'>Celestion G12H Ann 152 Open Room.wav</div>";
+    x += "</div></td>"; x += "</tr>"; }
+    x += "</tbody></table>";
 
-    return s;
+    return x;
 }
 
 function flexfx_initialize( tag )
@@ -99,58 +99,5 @@ function _on_property_received( property )
 
 function _on_firmware_status( status )
 {
-}
-
-function _return_interface()
-{
-	s = "";
-    s += "FLEXFX STEREO CABSIM Property Interface";
-	s += "";
-    s += "Stereo Cabinet Simulator using impulse responses. Impulse responses to upload";
-    s += "must be stored in a wave file (RIFF/WAV format) and have a sampling frequency";
-    s += "of 48 kHz. Both mono and stereo source data is supported.  Stereo can also be";
-    s += "employed by specifying two mono WAV files.";
-	s += "";
-    s += "PROP      DESCRIPTION";
-    s += "1000      Volume,tone,preset control settings";
-    s += "1n01      Up to 20 charactr name for preset N (1<=N<=9)";
-    s += "1n03      Five IR data words for preset N or echoed data";
-    s += "1n04      Bidirectional    End data upload for preset N or end upload ACK";
-    s += "1n05      Bidirectional    First 20 chars of data file name for preset N";
-    s += "1n06      Bidirectional    Next 20 chars of data file name for preset N";
-    s += "1n07      Bidirectional    Last 20 chars of data file name for preset N";
-	s += "";
-    s += "Property layout for control (knobs, pushbuttons, etc) Values shown are 32-bit";
-    s += "values represented in ASCII/HEX format or as floating point values ranging";
-    s += "from +0.0 up to (not including) +1.0.";
-	s += "";
-    s += "+------- Effect parameter identifier (Property ID)";
-    s += "|";
-    s += "|    +-------------------------------- Volume level";
-    s += "|    |     +-------------------------- Tone setting";
-    s += "|    |     |     +-------------------- Reserved";
-    s += "|    |     |     |     +-------------- Reserved";
-    s += "|    |     |     |     |     +-------- Preset selection (1 through 9)";
-    s += "|    |     |     |     |     |+------- Enabled (1=yes,0=bypassed)";
-    s += "|    |     |     |     |     ||+------ InputL  (1=plugged,0=unplugged)";
-    s += "|    |     |     |     |     |||+----- OutputL (1=plugged,0=unplugged)";
-    s += "|    |     |     |     |     ||||+---- InputR  (1=plugged,0=unplugged)";
-    s += "|    |     |     |     |     |||||+--- OutputR (1=plugged,0=unplugged)";
-    s += "|    |     |     |     |     ||||||+-- Expression (1=plugged,0=unplugged)";
-    s += "|    |     |     |     |     |||||||+- USB Audio (1=active)";
-    s += "|    |     |     |     |     ||||||||";
-    s += "1001 0.500 0.500 0.500 0.500 91111111";
-	s += "";
-    s += "Property layout for preset data loading (loading IR data). Values shown are";
-    s += "32-bit values represented in ASCII/HEX format.";
-	s += "";
-    s += "+---------- Effect parameter identifier (Property ID)";
-    s += "|";
-    s += "|+--- Preset number (1 through 9)";
-    s += "||";
-    s += "1n02 0 0 0 0 0     Begin IR data loading for preset N";
-    s += "1n03 A B C D E     Five of the next IR data words to load into preset N";
-    s += "1n04 0 0 0 0 0     End IR data loading for preset N";
-	return s;
 }
 
