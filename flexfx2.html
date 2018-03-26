@@ -16,44 +16,161 @@
 <script>
 
 var _midi_input_ports = {}, _midi_output_ports = {}, _midi_io_pairing_map = {};
-var _controller_script, _interface_text;
+var _interface_script = "";
+var _data_upload_active = 0;
 
 window.addEventListener('load', function()
 {
-    if(navigator.requestMIDIAccess)
-    {
+    if(navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({sysex:true}).then(_on_midi_success,_on_midi_failure);
     }
     else document.write( "This browser does not support MIDI access." );
 });
 
-function __load_controller( effect_name, instance_tag )
+function _on_midi_success( midiAccess )
 {
-    var div = document.createElement('div');
-    $('controller').appendChild( div );
-    div.id = instance_tag;
+    midiAccess.onstatechange = _on_midi_connect;
+    var event = new Object();
+    event.currentTarget = midiAccess;
+    _on_midi_connect( event )
+}
 
-    //var script = document.createElement('link');
-    //script.rel = "stylesheet";
-    //script.type = "text/css";
-    //script.href = effect_name + ".css";
-    //document.getElementsByTagName("head")[0].appendChild(script);
+function _on_midi_failure( error )
+{
+    document.write( "MIDI access denied." );
+}
 
-    var script = document.createElement('script');
-    script.type = "text/javascript";
-    script.src = effect_name + ".js";
-    script.async = false;
-    script.onload = function(e)
-    {
-        object = eval( effect_name+"('"+instance_tag+"');" );
-        $(instance_tag).innerHTML = object.html;
-        object.initialize( instance_tag );
-    };
-    document.getElementsByTagName("head")[0].appendChild(script);
+var _dumping = 0;
+
+function _on_midi_connect( event )
+{
+    var midi_access  = event.currentTarget;
+    var midi_inputs  = event.currentTarget.inputs.values ();
+    var midi_outputs = event.currentTarget.outputs.values();
+
+    var prev_midi_input_ports  = Object.assign({},_midi_input_ports);
+    var prev_midi_output_ports = Object.assign({},_midi_output_ports);
+    
+    var tag2 = 0;
+
+    _midi_input_ports = {}; _midi_output_ports = {};
+
+    var new_input_port_tag, new_output_port_tag;
+
+    for( var port = midi_inputs.next(); !port.done; port = midi_inputs.next() ) {
+        if( port.value.manufacturer == "FlexFX" ) {
+            var tag = _tohex( port.value.id )
+            if( !(tag in _midi_input_ports) ) {
+                _midi_input_ports[tag] = port.value;
+                new_input_port_tag = tag;
+    }}}
+    for( var port = midi_outputs.next(); !port.done; port = midi_outputs.next()) {
+        if( port.value.manufacturer == "FlexFX" ) {
+            var tag = _tohex( port.value.id )
+            if( !(tag in _midi_output_ports) ) {
+                _midi_output_ports[tag] = port.value;
+                new_output_port_tag = tag;
+    }}}
+
+    for( var tag in prev_midi_input_ports ) {
+        if( !(tag in _midi_input_ports) ) {
+            _unload_controller( tag );
+    }}
+    for( var tag in prev_midi_output_ports ) {
+        if( !(tag in _midi_output_ports) ) {
+            _unload_controller( tag );
+    }}
+    for( var tag in _midi_input_ports ) {
+        if( !(tag in prev_midi_input_ports) ) {
+            var port = _midi_input_ports[tag];
+            port.onmidimessage = _on_midi_message;
+            tag2 = tag;
+    }}
+    for( var tag in _midi_output_ports ) {
+        if( !(tag in prev_midi_output_ports) ) {
+            var port = _midi_output_ports[tag];
+            _dumping = 1
+            data = flexfx_property_to_midi( [0x01,0,0,0,0,parseInt(tag,16)] )
+            port.send( data );
+    }}
 }
 
 var _midi_buffer, _midi_port, _load_count, _instance_tag, _total_size;
 var _company_name, _product_name;
+
+function _property_to_text( property )
+{
+	var text = "";
+	text += String.fromCharCode( property[1]>>24, (property[1]>>16)&255, (property[1]>>8)&255, property[1]&255 );
+	text += String.fromCharCode( property[2]>>24, (property[2]>>16)&255, (property[2]>>8)&255, property[2]&255 );
+	text += String.fromCharCode( property[3]>>24, (property[3]>>16)&255, (property[3]>>8)&255, property[3]&255 );
+	text += String.fromCharCode( property[4]>>24, (property[4]>>16)&255, (property[4]>>8)&255, property[4]&255 );
+	text += String.fromCharCode( property[5]>>24, (property[5]>>16)&255, (property[5]>>8)&255, property[5]&255 );
+	return text;
+}
+
+function _property_to_text2( property )
+{
+	var text = "";
+	text += String.fromCharCode( property[1]&255, (property[1]>>8)&255, (property[1]>>16)&255, property[1]>>24 );
+	text += String.fromCharCode( property[2]&255, (property[2]>>8)&255, (property[2]>>16)&255, property[2]>>24 );
+	text += String.fromCharCode( property[3]&255, (property[3]>>8)&255, (property[3]>>16)&255, property[3]>>24 );
+	text += String.fromCharCode( property[4]&255, (property[4]>>8)&255, (property[4]>>16)&255, property[4]>>24 );
+	text += String.fromCharCode( property[5]&255, (property[5]>>8)&255, (property[5]>>16)&255, property[5]>>24 );
+	return text;
+}
+
+function _on_midi_message( event )
+{
+    var property = flexfx_midi_to_prop( event.data );
+
+    var tag = _tohex(event.srcElement.id);
+    if( property[0] == 0x01 ) _midi_io_pairing_map[tag] = _tohex(property[5]);
+    var tag2 = _midi_io_pairing_map[tag];
+
+    //console.log( "Event:" + property[0].toString(16) )
+
+    if( property[0] == 0x01 )
+    {
+    	_product_name = ""
+        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x02,0,0,0,0,0] ));
+    }
+    else if( property[0] == 0x02 )
+    {
+        for( var ii = 1; ii < 6; ++ii ) {
+            _product_name += String.fromCharCode( (property[ii]>>24)&255 );
+            _product_name += String.fromCharCode( (property[ii]>>16)&255 );
+            _product_name += String.fromCharCode( (property[ii]>> 8)&255 );
+            _product_name += String.fromCharCode( (property[ii]>> 0)&255 );
+        }
+        _interface_script = "";
+        _midi_buffer = [];
+        _load_count = 0;
+        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x04,0,0,0,0,0] ));
+    }
+    else if( _dumping == 1 && (property[0] & 0xF000) == 0xC000 )
+    {
+    	_midi_buffer.push( property[1] ); _midi_buffer.push( property[2] );
+    	_midi_buffer.push( property[3] ); _midi_buffer.push( property[4] );
+    	_midi_buffer.push( property[5] );
+
+    	_interface_script += _property_to_text2( property );
+    	
+        if( ++_load_count == 1024 || property[1] == 0 )
+        {
+        	_dumping = 0;
+        	_interface_script = _interface_script.slice(0,_interface_script.indexOf(String.fromCharCode(0)));        	
+			if( _interface_script.length < 100 ) {
+				_interface_script = 'function flexfx_create( tag ) {return "";} function flexfx_initialize(tag){return _on_property_received;} function _on_property_received(property){} function _on_firmware_status(status){}';
+			}
+			_load_controller( tag2, _interface_script );
+        }
+    }
+    else if( _data_upload_active != 0 && (property[0] & 0xF000) == 0x9000 )
+    {
+    	_flexfx_upload_data_next();
+    }
+}
 
 function _load_controller( tag, script_text )
 {
@@ -73,16 +190,16 @@ function _load_controller( tag, script_text )
     x += "<table class='flexfx'><tbody><tr>";
     x += "<td><input type='file' style='display:none' id='"+tag+"_input1'/><button id='"+tag+"_button1'>Write Firmware</button></td>";
     x += "<td><input type='file' style='display:none' id='"+tag+"_input2'/><button id='"+tag+"_button2'>UpLoad Data</button></td>";
-    x += "<td><input type='file' style='display:none' id='"+tag+"_input3'/><button id='"+tag+"_button3'>Show Interface</button></td>";
+    //x += "<td><input type='file' style='display:none' id='"+tag+"_input3'/><button id='"+tag+"_button3'>Show Interface</button></td>";
     x += "</tr></tbody></table>";
 
     x += flexfx_create( tag );
     x += "</div></div>";
 
-    $(tag).innerHTML = x
+    $(tag).innerHTML = x;
 
-    for (var i=1;i<=3;++i) $(tag+"_button"+i).onclick = _on_factory_button;
-    for (var i=1;i<=3;++i) $(tag+"_input"+i).onchange = _on_factory_input;
+    for (var i=1;i<=2;++i) $(tag+"_button"+i).onclick = _on_factory_button;
+    for (var i=1;i<=2;++i) $(tag+"_input"+i).onchange = _on_factory_input;
 
     flexfx_initialize( tag );
 }
@@ -132,91 +249,6 @@ function _tohex( x )
     return x;
 }
 
-function _on_midi_success( midiAccess )
-{
-    midiAccess.onstatechange = _on_midi_connect;
-    var event = new Object();
-    event.currentTarget = midiAccess;
-    _on_midi_connect( event )
-}
-
-function __on_midi_connect( event )
-{
-    var midi_access  = event.currentTarget;
-    var midi_inputs  = event.currentTarget.inputs.values ();
-    var midi_outputs = event.currentTarget.outputs.values();
-
-    for( var port = midi_inputs.next(); !port.done; port = midi_inputs.next() ) {
-        if( port.value.manufacturer == "FlexFX" ) {
-            var tag = _tohex( port.value.id )
-            _midi_input_ports[tag] = port.value;
-            port.value.onmidimessage = _on_midi_message;
-    }}
-    for( var port = midi_outputs.next(); !port.done; port = midi_outputs.next()) {
-        if( port.value.manufacturer == "FlexFX" ) {
-            var tag = _tohex( port.value.id )
-            _midi_output_ports[tag] = port.value;
-            port.value.send( flexfx_property_to_midi( [0x01,0,0,0,0,parseInt(tag,16)] ));
-    }}
-}
-
-function _on_midi_connect( event )
-{
-    var midi_access  = event.currentTarget;
-    var midi_inputs  = event.currentTarget.inputs.values ();
-    var midi_outputs = event.currentTarget.outputs.values();
-
-    var prev_midi_input_ports  = Object.assign({},_midi_input_ports);
-    var prev_midi_output_ports = Object.assign({},_midi_output_ports);
-    
-    var tag2 = 0;
-
-    _midi_input_ports = {}; _midi_output_ports = {};
-
-    var new_input_port_tag, new_output_port_tag;
-
-    for( var port = midi_inputs.next(); !port.done; port = midi_inputs.next() ) {
-        if( port.value.manufacturer == "FlexFX" ) {
-            var tag = _tohex( port.value.id )
-            if( !(tag in _midi_input_ports) ) {
-                _midi_input_ports[tag] = port.value;
-                new_input_port_tag = tag;
-    }}}
-    for( var port = midi_outputs.next(); !port.done; port = midi_outputs.next()) {
-        if( port.value.manufacturer == "FlexFX" ) {
-            var tag = _tohex( port.value.id )
-            if( !(tag in _midi_output_ports) ) {
-                _midi_output_ports[tag] = port.value;
-                new_output_port_tag = tag;
-    }}}
-
-    for( var tag in prev_midi_input_ports ) {
-        if( !(tag in _midi_input_ports) ) {
-            _unload_controller( tag );
-    }}
-    for( var tag in prev_midi_output_ports ) {
-        if( !(tag in _midi_output_ports) ) {
-            _unload_controller( tag );
-    }}
-    for( var tag in _midi_input_ports ) {
-        if( !(tag in prev_midi_input_ports) ) {
-            var port = _midi_input_ports[tag];
-            port.onmidimessage = _on_midi_message;
-            tag2 = tag;
-    }}
-    for( var tag in _midi_output_ports ) {
-        if( !(tag in prev_midi_output_ports) ) {
-            var port = _midi_output_ports[tag];
-            data = flexfx_property_to_midi( [0x01,0,0,0,0,parseInt(tag,16)] )
-            port.send( data );
-    }}
-}
-
-function _on_midi_failure( error )
-{
-    document.write( "MIDI access denied." );
-}
-
 function pop_up( text )
 {
 	var popup = window.open()
@@ -224,75 +256,6 @@ function pop_up( text )
 	popup.document.open()
 	popup.document.write(html)
 	popup.document.close()
-}
-
-function _on_midi_message( event )
-{
-    var property = flexfx_midi_to_prop( event.data );
-
-    var tag = _tohex(event.srcElement.id);
-    if( property[0] == 0x01 ) {
-        _midi_io_pairing_map[tag] = _tohex(property[5]);
-    }
-    var tag2 = _midi_io_pairing_map[tag];
-
-    if( property[0] == 0x01 )
-    {
-        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x02,0,0,0,0,0] ));
-    }
-    else if( property[0] == 0x02 )
-    {
-        _product_name = "";
-        for( var ii = 1; ii < 6; ++ii ) {
-            _product_name += String.fromCharCode( (property[ii]>>24)&255 );
-            _product_name += String.fromCharCode( (property[ii]>>16)&255 );
-            _product_name += String.fromCharCode( (property[ii]>> 8)&255 );
-            _product_name += String.fromCharCode( (property[ii]>> 0)&255 );
-        }
-        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x06,0,0,0,0,0] ));
-    }
-    else if( property[0] == 0x03 )
-    {
-        _interface_text = "";
-        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x04,0,0,0,0,0] ));
-    }
-    else if( property[0] == 0x04 )
-    {
-        text  = String.fromCharCode( property[1]>>24, (property[1]>>16)&255, (property[1]>>8)&255, property[1]&255 );
-        text += String.fromCharCode( property[2]>>24, (property[2]>>16)&255, (property[2]>>8)&255, property[2]&255 );
-        text += String.fromCharCode( property[3]>>24, (property[3]>>16)&255, (property[3]>>8)&255, property[3]&255 );
-        text += String.fromCharCode( property[4]>>24, (property[4]>>16)&255, (property[4]>>8)&255, property[4]&255 );
-        text += String.fromCharCode( property[5]>>24, (property[5]>>16)&255, (property[5]>>8)&255, property[5]&255 );
-        _interface_text += text;
-        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x04,0,0,0,0,0] ));
-    }
-    else if( property[0] == 0x05 )
-    {
-        //alert( _interface_text );
-        //pop_up( _interface_text );
-    }
-    else if( property[0] == 0x06 )
-    {
-        _controller_script = "";
-        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x07,0,0,0,0,0] ));
-    }
-    else if( property[0] == 0x07 )
-    {
-        text  = String.fromCharCode( property[1]>>24, (property[1]>>16)&255, (property[1]>>8)&255, property[1]&255 );
-        text += String.fromCharCode( property[2]>>24, (property[2]>>16)&255, (property[2]>>8)&255, property[2]&255 );
-        text += String.fromCharCode( property[3]>>24, (property[3]>>16)&255, (property[3]>>8)&255, property[3]&255 );
-        text += String.fromCharCode( property[4]>>24, (property[4]>>16)&255, (property[4]>>8)&255, property[4]&255 );
-        text += String.fromCharCode( property[5]>>24, (property[5]>>16)&255, (property[5]>>8)&255, property[5]&255 );
-        _controller_script += text;
-        _midi_output_ports[tag2].send( flexfx_property_to_midi( [0x07,0,0,0,0,0] ));
-    }
-    else if( property[0] == 0x08 )
-    {
-        if( _controller_script.length < 100 ) {
-        	_controller_script = 'function flexfx_create( tag ) {return "";} function flexfx_initialize(tag){return _on_property_received;} function _on_property_received(property){} function _on_firmware_status(status){}';
-        }
-        _load_controller( tag2, _controller_script );
-    }
 }
 
 function flexfx_get_tag( id ) { return id.slice(0,8); }
@@ -336,11 +299,23 @@ function array_to_ui2le(a) { return a[0]+256*a[1]; }
 function array_to_ui4be(a) { return 16777216*a[0]+65536*a[1]+256*a[2]+a[3]; }
 function array_to_ui4le(a) { return a[0]+256*a[1]+65536*a[2]+16777216*a[3]; }
 
+function flexfx_write_firmware( midi_port, file_object, status_handler )
+{
+    var reader = new FileReader();
+    reader.onload = function(e)
+    {
+        _midi_buffer = new Uint8Array( reader.result );
+        setTimeout( _flexfx_write_firmware_begin, 1 );
+    }
+    _midi_port = midi_port;
+    reader.readAsArrayBuffer( file_object );
+}
+
 function _flexfx_write_firmware_begin()
 {
     $(_instance_tag+"_button1").disabled = true;
     $(_instance_tag+"_button2").disabled = true;
-    $(_instance_tag+"_button3").disabled = true;
+    //$(_instance_tag+"_button3").disabled = true;
     _load_count = 0;
     _midi_port.send( flexfx_property_to_midi( [0x09,0,0,0,0,0] ));
     _total_size = _midi_buffer.length;
@@ -379,71 +354,43 @@ function _flexfx_write_firmware_end()
     $(_instance_tag+"_button1").innerHTML = "Finished"
 }
 
-function flexfx_write_firmware( midi_port, file_object, status_handler )
+function flexfx_upload_data( midi_port, file_object, status_handler )
 {
     var reader = new FileReader();
     reader.onload = function(e)
     {
+		$(_instance_tag+"_button1").disabled = true;
+		$(_instance_tag+"_button2").disabled = true;
+		//$(_instance_tag+"_button3").disabled = true;
+		_data_upload_active = 1;
+		_load_count = 0;
         _midi_buffer = new Uint8Array( reader.result );
-        setTimeout( _flexfx_write_firmware_begin, 1 );
+        _midi_buffer = flexfx_wave_to_samples( _midi_buffer );
+        setTimeout( _flexfx_upload_data_next, 0 );
     }
     _midi_port = midi_port;
     reader.readAsArrayBuffer( file_object );
-}
-
-function _flexfx_upload_data_begin()
-{
-    $(_instance_tag+"_button1").disabled = true;
-    $(_instance_tag+"_button2").disabled = true;
-    $(_instance_tag+"_button3").disabled = true;
-    _load_count = 0;
-    _midi_port.send( flexfx_property_to_midi( [0x0C,0,0,0,0,0] ));
-    _total_size = _midi_buffer.length;
-    $(_instance_tag+"_button2").innerHTML = "Starting ..."
-    setTimeout( _flexfx_write_firmware_next, 5000 );
 }
 
 function _flexfx_upload_data_next()
 {
     if( _midi_buffer.length > 0 )
     {
-        var property = [0x0D,0,0,0,0,0];
-        property[1] = array_to_ui4be( _midi_buffer ); _midi_buffer = _midi_buffer.slice(4);
-        property[2] = array_to_ui4be( _midi_buffer ); _midi_buffer = _midi_buffer.slice(4);
-        property[3] = array_to_ui4be( _midi_buffer ); _midi_buffer = _midi_buffer.slice(4);
-        property[4] = array_to_ui4be( _midi_buffer ); _midi_buffer = _midi_buffer.slice(4);
-
-        _midi_port.send( flexfx_property_to_midi( property ));
-        if( _load_count == 0 || (_load_count % 16) == 0 ) {
-            progress = (1600.0 * _load_count) / _total_size;
-            if( progress > 99 ) progress = 99;
-            $(_instance_tag+"_button2").innerHTML = progress.toPrecision(2) + "\% Complete"
-            if( _load_count == 0 || (_load_count % 256) == 0 ) {
-            }
-            setTimeout( _flexfx_upload_data_next, 15 );
-        }
-        else setTimeout( _flexfx_upload_data_next, 1 );
+        var property = [0x9000+_load_count,0,0,0,0,0];
         _load_count += 1;
+        if( _midi_buffer.length >= 1 ) property[1] = _midi_buffer[0];
+        if( _midi_buffer.length >= 2 ) property[2] = _midi_buffer[1];
+        if( _midi_buffer.length >= 3 ) property[3] = _midi_buffer[2];
+        if( _midi_buffer.length >= 4 ) property[4] = _midi_buffer[3];
+        if( _midi_buffer.length >= 5 ) property[5] = _midi_buffer[4];
+        _midi_buffer = _midi_buffer.slice(5);
+        _midi_port.send( flexfx_property_to_midi( property ));
     }
-    else setTimeout( _flexfx_upload_data_end, 1 );
-}
-
-function _flexfx_upload_data_end()
-{
-    _midi_port.send( flexfx_property_to_midi( [0x0E,0,0,0,0,0] ));
-    $(_instance_tag+"_button2").innerHTML = "UpLoad Data"
-}
-
-function flexfx_upload_data( midi_port, file_object, status_handler )
-{
-    var reader = new FileReader();
-    reader.onload = function(e)
-    {
-        _midi_buffer = new Uint8Array( reader.result );
-        setTimeout( _flexfx_upload_data_begin, 1 );
+    else {
+    	_data_upload_active = 0;
+		$(_instance_tag+"_button1").disabled = false;
+		$(_instance_tag+"_button2").disabled = false;
     }
-    _midi_port = midi_port;
-    reader.readAsArrayBuffer( file_object );
 }
 
 function flexfx_wave_to_samples( data )
@@ -470,7 +417,7 @@ function flexfx_wave_to_samples( data )
             thruput  = array_to_ui4le(data); data = data.slice(4);
             align    = array_to_ui2le(data); data = data.slice(2);
             width    = array_to_ui2le(data); data = data.slice(2);
-            console.log( "WaveIn: ByteCount=%u Channels=%u Rate=%u WordSize=%u", blocksz,channels,rate,width );
+            //console.log( "WaveIn: ByteCount=%u Channels=%u Rate=%u WordSize=%u", blocksz,channels,rate,width );
         }
         else if( blockid == 0x61746164 ) // Signature for 'data'
         {
