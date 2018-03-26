@@ -35,12 +35,9 @@ static void read_adc( double values[4] )
     i2c_stop();
 }
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
     static bool state = 0;
-
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
 
     double pot_values[4]; read_adc( pot_values );
     double bass = pot_values[2], middle = pot_values[1], treble = pot_values[0];
@@ -69,9 +66,9 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
     rcv_prop[0] = 0; // Mark incoming properties as 'consumed'.
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     int guitar_in = i2s_output[0] - i2s_output[1];
@@ -83,7 +80,7 @@ void mixer( const int* usb_output, int* usb_input,
 
 int coeff_actual[3*5], coeff_target[3*5], tone_stateL[3*4], tone_stateR[3*4];
 
-void dsp_initialize( void ) // Called once upon boot-up.
+void app_initialize( void ) // Called once upon boot-up.
 {
     memset( coeff_actual, 0, sizeof(coeff_actual) );
     memset( coeff_target, 0, sizeof(coeff_target) );
@@ -91,7 +88,7 @@ void dsp_initialize( void ) // Called once upon boot-up.
     memset( tone_stateR,  0, sizeof(tone_stateR) );
 }
 
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // Check for bass, middle or treble property data to update tone filter with.
     if( property[0] == PROP_EXAMPLE_BASS )   memcpy( coeff_target+5*0, property+1, 20 );
@@ -115,18 +112,18 @@ void dsp_thread1( int* samples, const int* property )
     samples[1] = dsp_iir( samples[1], coeff_actual, tone_stateR, 3 ); // 3 cascaded Biquads
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
 }
 
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
 }
 
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
 }
 
-void dsp_thread5( int* samples, const int* property )
+void dsp_thread5( int samples[32], const int property[6] )
 {
 }

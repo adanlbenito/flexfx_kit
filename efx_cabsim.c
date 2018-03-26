@@ -32,13 +32,10 @@ static void adc_read( double values[4] ) // I2C control for the Analog Devices A
     i2c_stop();
 }
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
     // Pass incoming properties on to CABSIM control ...
-    efx_cabsim__control( rcv_prop, usb_prop, dsp_prop );
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
-
+    efx_cabsim__app_control( rcv_prop, usb_prop, dsp_prop );
     // If outgoing USB or DSP properties are now use then come back later ...
     if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
 
@@ -64,20 +61,20 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
         // Send property with updated controll settings to the DSP threads via cabsim control ...
         dsp_prop[0] = 0x00008001;
         dsp_prop[1] = volume; dsp_prop[2] = tone; dsp_prop[3] = preset;
-        efx_cabsim__control( rcv_prop, usb_prop, dsp_prop );
+        efx_cabsim__app_control( rcv_prop, usb_prop, dsp_prop );
     }
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
-    efx_cabsim__mixer( usb_output, usb_input, i2s_output, i2s_input,
-                       dsp_output, dsp_input, property );
+    efx_cabsim__app_mixer( usb_output, usb_input, i2s_output, i2s_input,
+                           dsp_output, dsp_input, property );
 }
 
-void dsp_thread1( int* samples, const int* property ) {efx_cabsim__dsp_thread1(samples,property);}
-void dsp_thread2( int* samples, const int* property ) {efx_cabsim__dsp_thread2(samples,property);}
-void dsp_thread3( int* samples, const int* property ) {efx_cabsim__dsp_thread3(samples,property);}
-void dsp_thread4( int* samples, const int* property ) {efx_cabsim__dsp_thread4(samples,property);}
-void dsp_thread5( int* samples, const int* property ) {efx_cabsim__dsp_thread5(samples,property);}
+void app_thread1( int samples[32], const int property[6] ) {efx_cabsim__app_thread1(samples,property);}
+void app_thread2( int samples[32], const int property[6] ) {efx_cabsim__app_thread2(samples,property);}
+void app_thread3( int samples[32], const int property[6] ) {efx_cabsim__app_thread3(samples,property);}
+void app_thread4( int samples[32], const int property[6] ) {efx_cabsim__app_thread4(samples,property);}
+void app_thread5( int samples[32], const int property[6] ) {efx_cabsim__app_thread5(samples,property);}

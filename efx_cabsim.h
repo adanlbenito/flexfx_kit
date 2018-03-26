@@ -5,14 +5,14 @@
 #define PROP_CABSIM_IR_DATA  0x33020003 // Load five IR samples
 #define PROP_CABSIM_IR_END   0x33020004 // End IR loadinbg
 
-void efx_cabsim__control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] );
+void efx_cabsim__app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] );
 
-void efx_cabsim__mixer( const int* usb_output, int* usb_input,
-                        const int* i2s_output, int* i2s_input,
-                        const int* dsp_output, int* dsp_input, const int* property );
+void efx_cabsim__app_mixer( const int usb_output[32], int usb_input[32],
+                            const int i2s_output[32], int i2s_input[32],
+                            const int dsp_output[32], int dsp_input[32], const int property[6] );
 
-void efx_cabsim__dsp_thread1( int* samples, const int* property );
-void efx_cabsim__dsp_thread2( int* samples, const int* property );
-void efx_cabsim__dsp_thread3( int* samples, const int* property );
-void efx_cabsim__dsp_thread4( int* samples, const int* property );
-void efx_cabsim__dsp_thread5( int* samples, const int* property );
+void efx_cabsim__app_thread1( int samples[32], const int property[6] );
+void efx_cabsim__app_thread2( int samples[32], const int property[6] );
+void efx_cabsim__app_thread3( int samples[32], const int property[6] );
+void efx_cabsim__app_thread4( int samples[32], const int property[6] );
+void efx_cabsim__app_thread5( int samples[32], const int property[6] );

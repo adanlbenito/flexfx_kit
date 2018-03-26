@@ -13,15 +13,13 @@ const int usb_output_chan_count = 2;     // 2 USB audio class 2.0 output channel
 const int usb_input_chan_count  = 2;     // 2 USB audio class 2.0 input channels
 const int i2s_channel_count     = 2;     // ADC/DAC channels per SDIN/SDOUT wire
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     int guitar_in = i2s_output[0] - i2s_output[1];
@@ -45,7 +43,7 @@ int _stereo_width   = FQ(0.2); // Parameter: Stereo width setting
 int _comb_damping   = FQ(0.2); // Parameter: Reflection damping factor (aka 'reflectivity')
 int _comb_feedbk    = FQ(0.2); // Parameter: Reflection feedback ratio (aka 'room size')
 
-void dsp_initialize( void ) // Called once upon boot-up.
+void app_initialize( void ) // Called once upon boot-up.
 {
     memset( _comb_bufferL, 0, sizeof(_comb_bufferL) );
     memset( _comb_stateL,  0, sizeof(_comb_stateL) );
@@ -89,7 +87,7 @@ inline int _allpass_filterR( int xx, int ii, int nn ) // yy[k] = xx[k] + g * xx[
     return yy;
 }
 
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // ----- Left channel reverb
     static int index = 0; ++index; // Used to index into the sample FIFO delay buffer
@@ -105,7 +103,7 @@ void dsp_thread1( int* samples, const int* property )
     samples[2] = _allpass_filterL( samples[2], index, 3 );
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
     // ----- Right channel reverb
     static int index = 0; ++index; // Used to index into the sample FIFO delay buffer
@@ -121,7 +119,7 @@ void dsp_thread2( int* samples, const int* property )
     samples[3] = _allpass_filterR( samples[3], index, 3 );
 }
 
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
     // Final mixing and stereo synthesis
     int dry = _wet_dry_blend, wet = FQ(1.0) - _wet_dry_blend;
@@ -138,10 +136,10 @@ void dsp_thread3( int* samples, const int* property )
                                     dsp_multiply( samples[3], wet1 ) );
 }
 
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
 }
 
-void dsp_thread5( int* samples, const int* property )
+void app_thread5( int samples[32], const int property[6] )
 {
 }

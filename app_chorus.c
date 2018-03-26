@@ -15,16 +15,13 @@ const int i2s_channel_count     = 2;     // ADC/DAC channels per SDIN/SDOUT wire
 
 const int i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
-    rcv_prop[0] = 0; // Mark incoming properties as 'consumed'.
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     int guitar_in = i2s_output[0] - i2s_output[1];
@@ -34,11 +31,11 @@ void mixer( const int* usb_output, int* usb_input,
     usb_input[1] = i2s_input[0] = i2s_input[1] = dsp_output[0] * 8; // Q28 to Q31
 }
 
-void dsp_initialize( void )
+void app_initialize( void )
 {
 }
 
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // Define LFO frequencies
     static int delta1 = FQ(1.7/48000.0); // LFO frequency 1.7 Hz @ 48 kHz
@@ -59,7 +56,7 @@ void dsp_thread1( int* samples, const int* property )
     samples[3] = dsp_multiply( samples[3], FQ(0.999) ); // LFO #2 in sample 3 for later use.
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
     // --- Generate wet signal #1 using LFO #1
     static int delay_fifo[1024], delay_index = 0; // Chorus delay line
@@ -75,7 +72,7 @@ void dsp_thread2( int* samples, const int* property )
     samples[2] = dsp_lagrange( ff, delay_fifo[i1], delay_fifo[i2], delay_fifo[i3] );
 }
 
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
     // --- Generate wet signal #2 using LFO #2
     static int delay_fifo[1024], delay_index = 0; // Chorus delay line
@@ -91,7 +88,7 @@ void dsp_thread3( int* samples, const int* property )
     samples[3] = dsp_lagrange( ff, delay_fifo[i1], delay_fifo[i2], delay_fifo[i3] );
 }
 
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
     int blend1 = FQ(+0.50), blend2 = FQ(+0.30);;
     // Mix dry signal with wet #1 and wet #2 and send to both left and right channels (0 and 1).
@@ -100,6 +97,6 @@ void dsp_thread4( int* samples, const int* property )
     samples[0] = samples[0]/2 + samples[2]/2 + samples[3]/2;
 }
 
-void dsp_thread5( int* samples, const int* property )
+void app_thread5( int samples[32], const int property[6] )
 {
 }

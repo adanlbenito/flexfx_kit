@@ -15,16 +15,13 @@ const int i2s_channel_count     = 2;      // 2,4,or 8 I2S channels per SDIN/SDOU
 
 const int i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
-    rcv_prop[0] = 0; // Mark incoming properties as 'consumed'.
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     int guitar_in = i2s_output[0] - i2s_output[1];
@@ -113,20 +110,20 @@ int preamp_model( int xx, int gain, int bias, int slewlim, int* state )
     return -xx;
 }
 
-void dsp_initialize( void ) // Called once upon boot-up.
+void app_initialize( void ) // Called once upon boot-up.
 {
     memset( antialias_state1, 0, sizeof(antialias_state1) );
     memset( antialias_state2, 0, sizeof(antialias_state2) );
 }
 
-void dsp_thread1( int* samples, const int* property ) // Upsample
+void app_thread1( int samples[32], const int property[6] ) // Upsample
 {
     // Up-sample by 2x by inserting zeros then apply the anti-aliasing filter
     samples[0] = 4 * dsp_fir( samples[0], antialias_coeff, antialias_state1, 64 );
     samples[1] = 4 * dsp_fir( 0,              antialias_coeff, antialias_state1, 64 );
 }
 
-void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
+void app_thread2( int samples[32], const int property[6] ) // Preamp stage 1
 {
     // Perform stage 1 overdrive on the two up-sampled samples for the left channel.
     samples[0] = dsp_iir     ( samples[0], emphasis1_coeff, emphasis1_state, 2 );
@@ -137,7 +134,7 @@ void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
     samples[1] = dsp_iir     ( samples[1], lowpass1_coeff, lowpass1_state, 1 );
 }
 
-void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
+void app_thread3( int samples[32], const int property[6] ) // Preamp stage 2
 {
     // Perform stage 2 overdrive on the two up-sampled samples for the left channel.
     samples[0] = dsp_iir     ( samples[0], emphasis2_coeff, emphasis2_state, 2 );
@@ -148,7 +145,7 @@ void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
     samples[1] = dsp_iir     ( samples[1], lowpass2_coeff, lowpass2_state, 1 );
 }
 
-void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
+void app_thread4( int samples[32], const int property[6] ) // Preamp stage 3
 {
     // Perform stage 3 overdrive on the two up-sampled samples for the left channel.
     samples[0] = dsp_iir     ( samples[0], emphasis3_coeff, emphasis3_state, 2 );
@@ -159,7 +156,7 @@ void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
     samples[1] = dsp_iir     ( samples[1], lowpass3_coeff, lowpass3_state, 1 );
 }
 
-void dsp_thread5( int* samples, const int* property ) // Downsample
+void app_thread5( int samples[32], const int property[6] ) // Downsample
 {
     // Down-sample by 2x by band-limiting via anti-aliasing filter and then discarding 1 sample.
     samples[0] = dsp_fir( samples[0], antialias_coeff, antialias_state2, 64 );
