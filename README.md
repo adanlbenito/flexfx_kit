@@ -67,7 +67,7 @@ const char  controller_app[]       = "No controller is available";
 // initialization/control, pot and switch sensing via I2C ADC's, handling of properties from USB
 // MIDI, and generation of properties to be consumed by the USB MIDI host and by the DSP threads.
 
-void control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
 }
 
@@ -75,9 +75,9 @@ void control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 // This function should only be used to route samples and for very basic DSP processing - not for
 // substantial sample processing since this may starve the audio driver.
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
 }
 
@@ -87,28 +87,24 @@ void mixer( const int* usb_output, int* usb_input,
 // by the constant 'dsp_chan_count' defined above.  NOTE: IIR, FIR, and BiQuad coeff and state
 // data *must* be declared non-static global!
 
-void dsp_initialize( void ) // Called once upon boot-up.
-{
-}
-
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // Process samples (from mixer) and properties. Send DSP results to stage 2.
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
     // Process samples (from stage 1) and properties. Send DSP results to stage 3.
 }
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
     // Process samples (from stage 2) and properties. Send DSP results to stage 4.
 }
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
     // Process samples (from stage 3) and properties. Send DSP results to stage 5.
 }
-void dsp_thread5( int* samples, const int* property )
+void app_thread5( int samples[32], const int property[6] )
 {
     // Process samples (from stage 4) and properties. Send DSP results to the mixer function.
 }
@@ -590,7 +586,7 @@ void copy_data( int dst[5], const int src[5] )
     dst[0]=src[0]; dst[1]=src[1]; dst[2]=src[2]; dst[3]=src[3]; dst[4]=src[4];
 }
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
     static bool intialized = 0, state = 0;
 
@@ -634,9 +630,9 @@ void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 int lopass_coeffs[5] = {FQ(1.0),0,0,0,0};
 int lopass_stateL[4] = {0,0,0,0}, lopass_stateR[4] = {0,0,0,0}; // Initial filter state/history.
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     static int volume = FQ(0.0), blend = FQ(0.5); // Initial volume and blend/mix levels.
 
@@ -678,7 +674,7 @@ void dsp_initialize( void ) // Called once upon boot-up.
     ir_coeff[0] = ir_coeff[1200] = FQ(+1.0);
 }
 
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // Check for properties containing new cabsim IR data, save new data to RAM
     if( IR_PROP_ID( property[0] ) == IR_PROP_ID( PROP_EXAMPLE_IRDATA ) &&
@@ -696,28 +692,28 @@ void dsp_thread1( int* samples, const int* property )
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*5, ir_state+240*5, samples+4, samples+5 );
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
     // Perform 240-sample convolution (2nd 240 of 1220 total) of sample with IR data
     samples[0] = dsp_convolve( samples[0], ir_coeff+240*1, ir_state+240*1, samples+2, samples+3 );
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*6, ir_state+240*6, samples+4, samples+5 );
 }
 
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
     // Perform 240-sample convolution (3rd 240 of 1220 total) of sample with IR data
     samples[0] = dsp_convolve( samples[0], ir_coeff+240*2, ir_state+240*2, samples+2, samples+3 );
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*7, ir_state+240*7, samples+4, samples+5 );
 }
 
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
     // Perform 240-sample convolution (4th 240 of 1220 total) of sample with IR data
     samples[0] = dsp_convolve( samples[0], ir_coeff+240*3, ir_state+240*3, samples+2, samples+3 );
     samples[1] = dsp_convolve( samples[1], ir_coeff+240*8, ir_state+240*8, samples+4, samples+5 );
 }
 
-void dsp_thread5( int* samples, const int* property )
+void app_thread5( int samples[32], const int property[6] )
 {
     static bool muted = 0;
     // Check IR property -- Mute at start of new IR loading, un-mute when done.
@@ -756,15 +752,11 @@ const char  controller_app[]       = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
-{
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || usb_prop[0] != 0 ) return;
-}
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] ) {}
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     dsp_input[0] = i2s_output[6]/2 - i2s_output[7]/2; // DSP left input channel = guitar input.
     dsp_input[1] = i2s_output[6]/2 - i2s_output[7]/2; // DSP right input channel = guitar input.
@@ -772,11 +764,7 @@ void mixer( const int* usb_output, int* usb_input,
     i2s_input[7] = dsp_output[1]; // Line out right channel = DSP output right channel
 }
 
-void dsp_initialize( void ) // Called once upon boot-up.
-{
-}
-
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // Define LFO frequencies
     static int delta1 = FQ(1.7/48000.0); // LFO frequency 1.7 Hz @ 48 kHz
@@ -797,7 +785,7 @@ void dsp_thread1( int* samples, const int* property )
     samples[3] = dsp_multiply( samples[3], FQ(0.999) ); // LFO #2 stored in sample 3 for later use.
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
     // --- Generate wet signal #1 using LFO #1
     static int delay_fifo[1024], delay_index = 0; // Chorus delay line
@@ -813,7 +801,7 @@ void dsp_thread2( int* samples, const int* property )
     samples[2] = dsp_lagrange( ff, delay_fifo[i1], delay_fifo[i2], delay_fifo[i3] );
 }
 
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
     // --- Generate wet signal #2 using LFO #2
     static int delay_fifo[1024], delay_index = 0; // Chorus delay line
@@ -829,7 +817,7 @@ void dsp_thread3( int* samples, const int* property )
     samples[3] = dsp_lagrange( ff, delay_fifo[i1], delay_fifo[i2], delay_fifo[i3] );
 }
 
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
     int blend1 = FQ(+0.50), blend2 = FQ(+0.30);;
     // Mix dry signal with wet #1 and wet #2 and send to both left and right channels (0 and 1).
@@ -838,7 +826,7 @@ void dsp_thread4( int* samples, const int* property )
     samples[0] = samples[1] = samples[2]/2 + samples[3]/2;
 }
 
-void dsp_thread5( int* samples, const int* property )
+void app_thread5( int samples[32], const int property[6] )
 {
 }
 ```
@@ -864,15 +852,11 @@ const char  controller_app[]       = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
-{
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || usb_prop[0] != 0 ) return;
-}
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] ) {}
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     int guitar_in = i2s_output[6] - i2s_output[7];
@@ -964,20 +948,14 @@ int preamp_model( int xx, int gain, int bias, int slewlim, int* state )
     return xx;
 }
 
-void dsp_initialize( void ) // Called once upon boot-up.
-{
-    memset( antialias_state1, 0, sizeof(antialias_state1) );
-    memset( antialias_state2, 0, sizeof(antialias_state2) );
-}
-
-void dsp_thread1( int* samples, const int* property ) // Upsample
+void app_thread1( int samples[32], const int property[6] ) // Upsample
 {
     // Up-sample by 2x by inserting zeros then apply the anti-aliasing filter
     samples[0] = 4 * dsp_fir_filt( samples[0], antialias_coeff, antialias_state1, 64 );
     samples[1] = 4 * dsp_fir_filt( 0,          antialias_coeff, antialias_state1, 64 );
 }
 
-void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
+void app_thread2( int samples[32], const int property[6] ) // Preamp stage 1
 {
     // Perform stage 1 overdrive on the two up-sampled samples for the left channel.
     samples[0] = dsp_iir_filt( samples[0], emphasis1_coeff, emphasis1_state, 2 );
@@ -988,7 +966,7 @@ void dsp_thread2( int* samples, const int* property ) // Preamp stage 1
     samples[1] = dsp_iir_filt( samples[1], lowpass1_coeff, lowpass1_state, 1 );
 }
 
-void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
+void app_thread3( int samples[32], const int property[6] ) // Preamp stage 2
 {
     // Perform stage 2 overdrive on the two up-sampled samples for the left channel.
     samples[0] = dsp_iir_filt( samples[0], emphasis2_coeff, emphasis2_state, 2 );
@@ -999,7 +977,7 @@ void dsp_thread3( int* samples, const int* property ) // Preamp stage 2
     samples[1] = dsp_iir_filt( samples[1], lowpass2_coeff, lowpass2_state, 1 );
 }
 
-void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
+void app_thread4( int samples[32], const int property[6] ) // Preamp stage 3
 {
     // Perform stage 3 overdrive on the two up-sampled samples for the left channel.
     samples[0] = dsp_iir_filt( samples[0], emphasis3_coeff, emphasis3_state, 2 );
@@ -1010,7 +988,7 @@ void dsp_thread4( int* samples, const int* property ) // Preamp stage 3
     samples[1] = dsp_iir_filt( samples[1], lowpass3_coeff, lowpass3_state, 1 );
 }
 
-void dsp_thread5( int* samples, const int* property ) // Downsample
+void app_thread5( int samples[32], const int property[6] ) // Downsample
 {
     // Down-sample by 2x by band-limiting via anti-aliasing filter and then discarding 1 sample.
     samples[0] = dsp_fir_filt( samples[0], antialias_coeff, antialias_state2, 64 );
@@ -1037,15 +1015,11 @@ const char  controller_string[]   = "No controller is available";
 
 const int   i2s_sync_word[8] = { 0xFFFFFFFF,0x00000000,0,0,0,0,0,0 }; // I2S WCLK values per slot
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
-{
-    // If outgoing USB or DSP properties are still use then come back later ...
-    if( usb_prop[0] != 0 || dsp_prop[0] != 0 ) return;
-}
+void app_control( const int rcv_prop[6], int usb_prop[6], int dsp_prop[6] ) {}
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
     // Convert the two ADC inputs into a single pseudo-differential mono input (mono = L - R).
     int guitar_in = i2s_output[0] - i2s_output[1];
@@ -1113,7 +1087,7 @@ inline int _allpass_filterR( int xx, int ii, int nn ) // yy[k] = xx[k] + g * xx[
     return yy;
 }
 
-void dsp_thread1( int* samples, const int* property )
+void app_thread1( int samples[32], const int property[6] )
 {
     // ----- Left channel reverb
     static int index = 0; ++index; // Used to index into the sample FIFO delay buffer
@@ -1129,7 +1103,7 @@ void dsp_thread1( int* samples, const int* property )
     samples[2] = _allpass_filterL( samples[2], index, 3 );
 }
 
-void dsp_thread2( int* samples, const int* property )
+void app_thread2( int samples[32], const int property[6] )
 {
     // ----- Right channel reverb
     static int index = 0; ++index; // Used to index into the sample FIFO delay buffer
@@ -1145,7 +1119,7 @@ void dsp_thread2( int* samples, const int* property )
     samples[3] = _allpass_filterR( samples[3], index, 3 );
 }
 
-void dsp_thread3( int* samples, const int* property )
+void app_thread3( int samples[32], const int property[6] )
 {
     // Final mixing and stereo synthesis
     int dry = _wet_dry_blend, wet = FQ(1.0) - _wet_dry_blend;
@@ -1162,11 +1136,11 @@ void dsp_thread3( int* samples, const int* property )
                                     dsp_multiply( samples[3], wet1 ) );
 }
 
-void dsp_thread4( int* samples, const int* property )
+void app_thread4( int samples[32], const int property[6] )
 {
 }
 
-void dsp_thread5( int* samples, const int* property )
+void app_thread5( int samples[32], const int property[6] )
 {
 }
 ```
@@ -1184,24 +1158,24 @@ This effect also supports the HTML5 interface for controlling the device (firmwa
 
 const char* product_name_string = "FlexFX Cabsim";  // Your company/product name
 
-void control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
+void app_control( int rcv_prop[6], int usb_prop[6], int dsp_prop[6] )
 {
-    efx_cabsim__control( rcv_prop, usb_prop, dsp_prop );
+    efx_cabsim__app_control( rcv_prop, usb_prop, dsp_prop );
 }
 
-void mixer( const int* usb_output, int* usb_input,
-            const int* i2s_output, int* i2s_input,
-            const int* dsp_output, int* dsp_input, const int* property )
+void app_mixer( const int usb_output[32], int usb_input[32],
+                const int i2s_output[32], int i2s_input[32],
+                const int dsp_output[32], int dsp_input[32], const int property[6] )
 {
-    efx_cabsim__mixer( usb_output, usb_input, i2s_output, i2s_input,
-                       dsp_output, dsp_input, property );
+    efx_cabsim__app_mixer( usb_output, usb_input, i2s_output, i2s_input,
+                           dsp_output, dsp_input, property );
 }
 
-void dsp_thread1( int* samples, const int* property ) {efx_cabsim__dsp_thread1(samples,property);}
-void dsp_thread2( int* samples, const int* property ) {efx_cabsim__dsp_thread2(samples,property);}
-void dsp_thread3( int* samples, const int* property ) {efx_cabsim__dsp_thread3(samples,property);}
-void dsp_thread4( int* samples, const int* property ) {efx_cabsim__dsp_thread4(samples,property);}
-void dsp_thread5( int* samples, const int* property ) {efx_cabsim__dsp_thread5(samples,property);}
+void app_thread1( int samples[32], const int property[6] ) {efx_cabsim__app_thread1(samples,property);}
+void app_thread2( int samples[32], const int property[6] ) {efx_cabsim__app_thread2(samples,property);}
+void app_thread3( int samples[32], const int property[6] ) {efx_cabsim__app_thread3(samples,property);}
+void app_thread4( int samples[32], const int property[6] ) {efx_cabsim__app_thread4(samples,property);}
+void app_thread5( int samples[32], const int property[6] ) {efx_cabsim__app_thread5(samples,property);}
 ```
 
 Discovery and Control
